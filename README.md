@@ -9,13 +9,41 @@ ROS Mesh tool
 ## Build 
 Copy the package from the repository and put it inside the src folder of the workspace.
 
+
+
+Instruction:
+On the shell type 'gedit ~/.bashrc', when opened copy the following text at the end of it, modifying the "PATH_WORKSPACE" to the correct address:
+```
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/velodyne_plugin/build
+source /opt/ros/melodic/setup.bash
+source /usr/share/gazebo/setup.sh
+export PATH_WORKSPACE=~/Desktop/Thesis_workspace/
+export PATH_MAIN=${PATH_WORKSPACE}/src/Traversability_module/Robot
+source ${PATH_WORKSPACE}/devel/setup.bash
+export ROS_PACKAGE_PATH=${PATH_MAIN}/unitree_ros:${ROS_PACKAGE_PATH}
+export GAZEBO_PLUGIN_PATH=${PATH_WORKSPACE}/devel/lib:${GAZEBO_PLUGIN_PATH}
+export LD_LIBRARY_PATH=${PATH_WORKSPACE}/devel/lib:${LD_LIBRARY_PATH}
+export UNITREE_LEGGED_SDK_PATH=${PATH_MAIN}/unitree_legged_sdk
+export ALIENGO_SDK_PATH=${PATH_MAIN}/aliengo_sdk
+#amd64, arm32, arm64
+export UNITREE_PLATFORM="amd64"
+```
+Correct the various mistakes till the code is running correctly, some commands that have corrected the behavior are:
+
+```
+apt install libprotobuf-dev
+sudo dpkg --configure -a
+sudo apt-get -f install
+```
+
+
 Installation of the controllers on melodic:
 ```
 sudo apt-get install ros-melodic-controller-interface  ros-melodic-gazebo-ros-control ros-melodic-joint-state-controller ros-melodic-effort-controllers ros-melodic-joint-trajectory-controller
 ```
 
-Install libprotobuf-dev to correct the google dependency problem.
-```
-apt install libprotobuf-dev
-```
+
+
+
+
 
