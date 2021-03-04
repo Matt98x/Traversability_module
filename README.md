@@ -36,14 +36,32 @@ sudo dpkg --configure -a
 sudo apt-get -f install
 ```
 
+May have problem with the version of gedit, if it happens, remove it with:
+```
+sudo apt-get purge gedit
+```
+
 
 Installation of the controllers on melodic:
 ```
 sudo apt-get install ros-melodic-controller-interface  ros-melodic-gazebo-ros-control ros-melodic-joint-state-controller ros-melodic-effort-controllers ros-melodic-joint-trajectory-controller
 ```
 
+Compile the code:
+```
+cd "Workspace path"
+catkin_make
+```
 
+To run a first visualization on RVIZ:
+```
+roslaunch a1_description a1_rviz.launch
+```
 
+To launch the gazebo template environment:
+```
+roslaunch unitree_gazebo normal.launch rname:=a1 wname:=stairs
+```
 
 
 
