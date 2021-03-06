@@ -5,6 +5,8 @@ Use of this source code is governed by the MPL-2.0 license, see LICENSE.
 
 #include "body.h"
 
+#define INTERVAL 1000
+
 namespace unitree_model {
 
 ros::Publisher servo_pub[12];
@@ -22,12 +24,12 @@ void paramInit()
         lowCmd.motorCmd[i*3+0].Kd = 3;
         lowCmd.motorCmd[i*3+0].tau = 0;
         lowCmd.motorCmd[i*3+1].mode = 0x0A;
-        lowCmd.motorCmd[i*3+1].Kp = 180;
+        lowCmd.motorCmd[i*3+1].Kp = 90;
         lowCmd.motorCmd[i*3+1].dq = 0;
         lowCmd.motorCmd[i*3+1].Kd = 8;
         lowCmd.motorCmd[i*3+1].tau = 0;
         lowCmd.motorCmd[i*3+2].mode = 0x0A;
-        lowCmd.motorCmd[i*3+2].Kp = 300;
+        lowCmd.motorCmd[i*3+2].Kp = 80;
         lowCmd.motorCmd[i*3+2].dq = 0;
         lowCmd.motorCmd[i*3+2].Kd = 15;
         lowCmd.motorCmd[i*3+2].tau = 0;
@@ -41,12 +43,13 @@ void stand()
 {   
     double pos[12] = {0.0, 0.67, -1.3, -0.0, 0.67, -1.3, 
                       0.0, 0.67, -1.3, -0.0, 0.67, -1.3};
-    moveAllPosition(pos, 2*1000);
+    moveAllPosition(pos,2*INTERVAL);
 }
 
 void motion_init()
 {
     paramInit();
+    ROS_INFO("Ciao");
     stand();
 }
 
@@ -54,9 +57,11 @@ void sendServoCmd()
 {
     for(int m=0; m<12; m++){
         servo_pub[m].publish(lowCmd.motorCmd[m]);
+	
     }
+    usleep(INTERVAL);
     ros::spinOnce();
-    usleep(1000);
+    
 }
 
 void moveAllPosition(double* targetPos, double duration)

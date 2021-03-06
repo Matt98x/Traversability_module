@@ -212,7 +212,7 @@ int main(int argc, char **argv)
     cout << "robot_name: " << robot_name << endl;
 
     multiThread listen_publish_obj(robot_name);
-    ros::AsyncSpinner spinner(1); // one threads
+    ros::AsyncSpinner spinner(2); // one threads
     spinner.start();
     usleep(300000); // must wait 300ms, to get first state
 
@@ -241,6 +241,7 @@ int main(int argc, char **argv)
         control logic
         */
         lowState_pub.publish(lowState);
+	
         sendServoCmd();
 
     }
