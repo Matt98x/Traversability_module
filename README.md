@@ -63,5 +63,11 @@ To launch the gazebo template environment:
 roslaunch unitree_gazebo normal.launch rname:=a1 wname:=stairs
 ```
 
+Install this (REQUIRED)
+```
+sudo apt install ros-melodic-velodyne-gazebo-plugins
+```
+
+
 
 

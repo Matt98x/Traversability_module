@@ -7,6 +7,7 @@
     <xacro:include filename="$(find a1_description)/xacro/leg.xacro"/>
     <xacro:include filename="$(find a1_description)/xacro/stairs.xacro"/>
     <xacro:include filename="$(find a1_description)/xacro/gazebo.xacro"/>
+    <xacro:include filename="$(find a1_description)/../velodyne_VLP16/vlp16.urdf.xacro"/>
     <!-- <xacro:include filename="$(find a1_gazebo)/launch/stairs.urdf.xacro"/> -->
 
     <!-- <xacro:stairs stairs="15" xpos="0" ypos="0" zpos="0" /> -->
@@ -138,5 +139,45 @@
     </xacro:leg>
 
     <!-- <xacro:stairs stairs="15" xpos="0" ypos="2.0" zpos="0" /> -->
+    <link name="camera_link">
+	    <collision>
+	      <origin xyz="-0.2 0 0.05" rpy="0 0 0"/>
+	      <geometry>
+		<box size="0.01 0.02 0.01"/>
+	      </geometry>
+	    </collision>
+	    <visual>
+	      <origin xyz="0 0 0" rpy="0 0 0"/>
+	      <geometry>
+		<box size="0.01 0.02 0.01"/>
+	      </geometry>
+	      <material name="gray"/>
+	    </visual>
+	    <inertial>
+	      <mass value="1" />
+	      <origin xyz="0 0 0" rpy="0 0 0"/>
+	      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1" iyz="0" izz="1e-6" />
+	    </inertial> 
+  </link>
+  
+  <joint name="camera_joint" type="fixed">
+	    <axis xyz="1 0 0" />
+	    <origin xyz="${trunk_length} 0 0" rpy="0 0 0"/>
+	    <parent link="trunk"/>
+	    <child link="camera_link"/> 
+   </joint>
 
+   <!-- LIDAR -->
+   <xacro:arg name="xyz" default="0.2 0 0.09" />
+   <xacro:arg name="rpy" default="0 0 0" />
+   <xacro:arg name="noise" default="0.008" />
+   <xacro:arg name="min_angle" default="-180" />
+   <xacro:arg name="max_angle" default="180" />
+   <xacro:arg name="azimuth" default="0.2" />
+   <xacro:arg name="hz" default="1" />
+   <xacro:arg name="lidar_name" default="vlp16" />
+   <vlp16 parent="trunk" name="$(arg lidar_name)" hz="$(arg hz)" noise="$(arg noise)"
+     min_angle="$(arg min_angle)" max_angle="$(arg max_angle)" azimuth="$(arg azimuth)">
+     <origin xyz="$(arg xyz)" rpy="$(arg rpy)"/>
+   </vlp16>
 </robot>

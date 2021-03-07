@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="node_start_delay" default="30.0" /> 
+  <param name="robot_name" value="a1"/>
+  <include file="$(find unitree_gazebo)/launch/normal.launch" >
+	<arg name="rname" value="a1"/>
+  </include>
+ 
+  <node pkg="unitree_controller" type="unitree_servo" name="unitree_servo" respawn="true" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find unitree_gazebo)/rviz/interface.rviz" />
+</launch>
