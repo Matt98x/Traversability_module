@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="node_start_delay" default="30.0" /> 
+  <arg name="node_start_delay" default="40.0" /> 
   <param name="robot_name" value="a1"/>
   <include file="$(find unitree_gazebo)/launch/normal.launch" >
 	<arg name="rname" value="a1"/>
