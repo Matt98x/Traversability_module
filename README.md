@@ -70,6 +70,7 @@ sudo apt install ocl-icd-opencl-dev
 sudo apt install apt-get install libgsl-dev
 sudo apt install libvtk7-jni
 sudo apt install libvtk7-java
+sudo apt install libvtk7-dev
 follow the instructions by Elvis Stansvik at discourse.vtk.org/t/installing-vtk-in-ubuntu-18-04/2147/4
 sudo apt-get install -y libvtk6-jni
 sudo apt-get install -y libvtk6-java
@@ -77,6 +78,6 @@ sudo apt-get install -y libvtk6-dev
 
 ```
 
-
+CIAO
 
 
