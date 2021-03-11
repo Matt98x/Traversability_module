@@ -6,7 +6,9 @@
 	<arg name="rname" value="a1"/>
   </include>
  
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find unitree_gazebo)/rviz/interface.rviz" launch-prefix="bash -c 'sleep 30; $0 $@' "/>
+  
   <node pkg="unitree_controller" type="unitree_servo" name="unitree_servo" respawn="true" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
 
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find unitree_gazebo)/rviz/interface.rviz" />
+  
 </launch>

@@ -48,6 +48,22 @@
   <!--   <test_depend>gtest</test_depend> -->
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
+  <depend>actionlib_msgs</depend>
+  <depend>actionlib</depend>
+  <depend>genmsg</depend>
+  <depend>lvr2</depend>
+  <depend>message_generation</depend>
+  <depend>message_runtime</depend>
+  <depend>roscpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>mesh_msgs</depend>
+  <depend>dynamic_reconfigure</depend>
+  <depend>tf2_ros</depend>
+  <depend>label_manager</depend>
+  <depend>lvr_ros</depend>
+
+
   <buildtool_depend>catkin</buildtool_depend>
 
 
