@@ -104,14 +104,14 @@ include_directories(
 )
 
 
-add_executable(mesh_creator src/mesh_creator.cpp)
-target_link_libraries(mesh_creator
+add_executable(flow_regulator src/flow_regulator.cpp)
+target_link_libraries(flow_regulator
   ${catkin_LIBRARIES}
   ${LVR2_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${MPI_CXX_LIBRARIES}
 )
-add_dependencies(mesh_creator ${catkin_EXPORTED_TARGETS})
+add_dependencies(flow_regulator ${catkin_EXPORTED_TARGETS})
 
 #############
 ## Install ##

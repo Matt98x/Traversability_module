@@ -49,7 +49,6 @@ void stand()
 void motion_init()
 {
     paramInit();
-    ROS_INFO("Ciao");
     stand();
 }
 

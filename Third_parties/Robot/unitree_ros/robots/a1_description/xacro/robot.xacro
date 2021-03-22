@@ -180,4 +180,6 @@
      min_angle="$(arg min_angle)" max_angle="$(arg max_angle)" azimuth="$(arg azimuth)">
      <origin xyz="$(arg xyz)" rpy="$(arg rpy)"/>
    </vlp16>
+
+	
 </robot>
