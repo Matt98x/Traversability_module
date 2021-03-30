@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="node_start_delay" default="30.0" /> 
+  
+  <!--ROBOT LAUNCHER -->
+	<include file="$(find unitree_gazebo)/launch/General.launch"/>
+
+  <!-- LAUNCHING THE FLOW REGULATOR -->
+  <node name="flow" pkg="traversability_mesh_package" type="flow_regulator" launch-prefix="bash -c 'sleep 30; $0 $@' "/>
+
+  <!-- LAUNCHING THE MESH RECONSTRUCTION -->
+  <node name="lvr" pkg="lvr_ros" type="lvr_ros_reconstruction" respawn="true" args="-d $(find unitree_gazebo)/rviz/interface.rviz" launch-prefix="bash -c 'sleep 50; $0 $@' "/>
+
+<!-- LAUNCHING THE MESH DISPLAY -->
+  <node name="rmdt" pkg="traversability_mesh_package" type="rmdt" launch-prefix="bash -c 'sleep 40; $0 $@' "/>
+</launch>

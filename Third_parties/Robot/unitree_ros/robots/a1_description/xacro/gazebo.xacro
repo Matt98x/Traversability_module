@@ -264,8 +264,21 @@
     </gazebo>
    
     <!-- camera -->
+
+    <joint name="camera_optical_joint" type="fixed">
+    <!-- these values have to be these values otherwise the gazebo camera
+        image won't be aligned properly with the frame it is supposedly
+        originating from -->
+    <origin xyz="0 0 0" rpy="${-pi/2} 0.0 ${-pi/2}"/>
+    <parent link="camera_link"/>
+    <child link="camera_link_optical"/>
+  </joint>
+
+  <link name="camera_link_optical">
+  </link>
+
   <gazebo reference="camera_link">
-    <sensor type="camera" name="camera1">
+    <sensor type="depth" name="camera1">
       <update_rate>30.0</update_rate>
       <camera name="head">
         <horizontal_fov>1.3962634</horizontal_fov>
@@ -284,24 +297,35 @@
           <stddev>0.007</stddev>
         </noise>
       </camera>
-      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>0.0</updateRate>
-        <cameraName>camera1</cameraName>
-        <imageTopicName>image_raw</imageTopicName>
-        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
-        <frameName>camera_link</frameName>
-        <hackBaseline>0.07</hackBaseline>
-        <distortionK1>0.0</distortionK1>
-        <distortionK2>0.0</distortionK2>
-        <distortionK3>0.0</distortionK3>
-        <distortionT1>0.0</distortionT1>
-        <distortionT2>0.0</distortionT2>
-      </plugin>
+      
+        <plugin name="camera_controller" filename="libgazebo_ros_openni_kinect.so">
+				  <baseline>0.2</baseline>
+				  <alwaysOn>true</alwaysOn>
+				  <updateRate>1.0</updateRate>
+				  <cameraName>camera1_ir</cameraName>
+				  <imageTopicName>/camera1/color/image_raw</imageTopicName>
+				  <cameraInfoTopicName>/camera1/color/camera_info</cameraInfoTopicName>
+				  <depthImageTopicName>/camera1/depth/image_raw</depthImageTopicName>
+				  <depthImageInfoTopicName>/camera1/depth/camera_info</depthImageInfoTopicName>
+				  <pointCloudTopicName>/pointcloud</pointCloudTopicName>
+				  <frameName>camera_link_optical</frameName>
+				  <pointCloudCutoff>0.5</pointCloudCutoff>
+				  <pointCloudCutoffMax>3.0</pointCloudCutoffMax>
+				  <distortionK1>0.00000001</distortionK1>
+				  <distortionK2>0.00000001</distortionK2>
+				  <distortionK3>0.00000001</distortionK3>
+				  <distortionT1>0.00000001</distortionT1>
+				  <distortionT2>0.00000001</distortionT2>
+				  <CxPrime>0</CxPrime>
+				  <Cx>0</Cx>
+				  <Cy>0</Cy>
+				  <focalLength>0</focalLength>
+				  <hackBaseline>0</hackBaseline>
+				</plugin>
     </sensor>
   </gazebo> 
 	<!-- LiDAR -->
-
+<!--
       <gazebo reference="vlp16_link">
       		
 	      <turnGravityOff>true</turnGravityOff>
@@ -345,7 +369,11 @@
 	          <pose frame=''>0 0 0 0 0 0</pose>
 	        </sensor>
 	    </gazebo>
-	   <gazebo>
+	   
+-->
+
+<gazebo>
+-
 		<plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
 		  <alwaysOn>true</alwaysOn>
 		  <updateRate>50.0</updateRate>
@@ -356,5 +384,24 @@
 		  <xyzOffsets>0 0 0</xyzOffsets>
 		  <rpyOffsets>0 0 0</rpyOffsets>
                </plugin>
-	   </gazebo>
+   	</gazebo>
+
+
 </robot>
+
+<!--
+      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+        <alwaysOn>true</alwaysOn>
+        <updateRate>0.0</updateRate>
+        <cameraName>camera1</cameraName>
+        <imageTopicName>image_raw</imageTopicName>
+        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <frameName>camera_link</frameName>
+        <hackBaseline>0.07</hackBaseline>
+        <distortionK1>0.0</distortionK1>
+        <distortionK2>0.0</distortionK2>
+        <distortionK3>0.0</distortionK3>
+        <distortionT1>0.0</distortionT1>
+        <distortionT2>0.0</distortionT2>
+      </plugin>
+-->

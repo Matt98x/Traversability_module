@@ -113,6 +113,12 @@ target_link_libraries(flow_regulator
 )
 add_dependencies(flow_regulator ${catkin_EXPORTED_TARGETS})
 
+add_executable(rmdt src/rmdt.cpp)
+target_link_libraries(rmdt
+  ${catkin_LIBRARIES}
+)
+add_dependencies(rmdt ${catkin_EXPORTED_TARGETS})
+
 #############
 ## Install ##
 #############

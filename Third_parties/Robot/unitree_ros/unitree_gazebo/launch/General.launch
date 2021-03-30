@@ -1,20 +1,19 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="node_start_delay" default="60.0" /> 
+  <arg name="node_start_delay" default="30.0" /> 
   <param name="robot_name" value="a1"/>
   <include file="$(find unitree_gazebo)/launch/normal.launch" >
 	<arg name="rname" value="a1"/>
   </include>
  
-   
-
-  <node name="lvr" pkg="lvr_ros" type="lvr_ros_reconstruction" args="-d $(find unitree_gazebo)/rviz/interface.rviz" launch-prefix="bash -c 'sleep 30; $0 $@' "/>
+  <node pkg="unitree_controller" type="unitree_servo" name="unitree_servo" respawn="true" output="screen" launch-prefix="bash -c 'sleep 10; $0 $@' "/>
   
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find unitree_gazebo)/rviz/interface.rviz" launch-prefix="bash -c 'sleep 50; $0 $@' "/>
-  
-  <node pkg="unitree_controller" type="unitree_servo" name="unitree_servo" respawn="true" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
 
-<node pkg="unitree_controller" type="unitree_transform" name="unitree_transform" respawn="true" output="screen" launch-prefix="bash -c 'sleep 70; $0 $@' "/>
-
+  <node pkg="unitree_controller" type="unitree_transform" name="unitree_transform" respawn="true" output="screen" launch-prefix="bash -c 'sleep 20; $0 $@' "/> 
   
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find unitree_gazebo)/rviz/interface.rviz" launch-prefix="bash -c 'sleep 30; $0 $@' "/>
+
+  <!-- <node name="commander" pkg="unitree_controller" type="unitree_move_kinetic" output="screen" launch-prefix =" bash -c 'sleep 40; $0 $@'"/> -->
+
+ <!-- <node name="commander" pkg="unitree_controller" type="unitree_move_kinetic" output="screen" launch-prefix=" bash -c 'sleep 40; $0 $@'; gnome-terminal "put 2 dashes here"command "/> -->
 </launch>

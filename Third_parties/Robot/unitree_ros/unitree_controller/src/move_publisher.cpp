@@ -5,8 +5,17 @@
 #include <stdio.h>  
 #include <tf/transform_datatypes.h>
 // #include <std_msgs/Float64.h>
+#include <geometry_msgs/Twist.h>
 #include <math.h>
 #include <iostream>
+
+geometry_msgs::Twist cmd;
+
+void cmd_callback (const geometry_msgs::Twist::ConstPtr& msg)
+{
+  //* Do data processing here...
+  cmd = *msg;
+}
 
 int main(int argc, char **argv)
 {
@@ -20,7 +29,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "move_publisher");
     ros::NodeHandle nh;
     ros::Publisher move_publisher = nh.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 1000);
-
+		ros::Subscriber twist_subscriber= nh.subscribe("/cmd_vel", 100, cmd_callback);;
     gazebo_msgs::ModelState model_state_pub;
 
     std::string robot_name;
@@ -34,7 +43,7 @@ int main(int argc, char **argv)
     {
         model_state_pub.pose.position.x = 0.0;
         model_state_pub.pose.position.y = 0.0;
-        model_state_pub.pose.position.z = 0.5;
+        model_state_pub.pose.position.z = 0.3;
         
         model_state_pub.pose.orientation.x = 0.0;
         model_state_pub.pose.orientation.y = 0.0;
@@ -44,7 +53,7 @@ int main(int argc, char **argv)
         model_state_pub.reference_frame = "world";
 
         long long time_ms = 0;  //time, ms
-        const double period = 5000; //ms
+        const double period = 1000; //ms
         const double radius = 1.5;    //m
         tf::Quaternion q;
         while(ros::ok())
@@ -60,13 +69,13 @@ int main(int argc, char **argv)
     }
     else if(def_frame == coord::ROBOT)
     {
-        model_state_pub.twist.linear.x= 0.02; //0.02: 2cm/sec
-        model_state_pub.twist.linear.y= 0.0;
-        model_state_pub.twist.linear.z= 0.08;
+        model_state_pub.twist.linear.x= cmd.linear.x; //0.02: 2cm/sec
+        model_state_pub.twist.linear.y= cmd.linear.y;
+        model_state_pub.twist.linear.z= cmd.linear.z;
         
-        model_state_pub.twist.angular.x= 0.0;
-        model_state_pub.twist.angular.y= 0.0;
-        model_state_pub.twist.angular.z= 0.0;
+        model_state_pub.twist.angular.x= cmd.angular.x;
+        model_state_pub.twist.angular.y= cmd.angular.y;
+        model_state_pub.twist.angular.z= cmd.angular.z;
 
         model_state_pub.reference_frame = "base";
 

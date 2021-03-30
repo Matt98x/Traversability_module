@@ -3,28 +3,27 @@
 #include <actionlib/client/terminal_state.h>
 #include <lvr_ros/ReconstructAction.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <mesh_msgs/TriangleMeshStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <boost/bind.hpp>
 
-
-
 //*Variable definition
-sensor_msgs::PointCloud2 cloud; // global Point cloud variable
-ros::Publisher point_pub;
-nav_msgs::Odometry odom;
 
+mesh_msgs::TriangleMeshStamped mesh; // global mesh variable
+ros::Publisher mesh_pub;
 
 //* Function to extract the Point Cloud
-void cloud_callback (const sensor_msgs::PointCloud2::ConstPtr& msg)
+void mesh_callback (const mesh_msgs::MeshGeometryStampedConstPtr& msg)
 {
  //* Create a container for the data.
-  sensor_msgs::PointCloud2 output;
+  mesh_msgs::MeshGeometryStamped output;
 
   //* Do data processing here...
   output = *msg;
-  cloud=output;
+  mesh.header=output.header;
+  mesh.mesh.triangles=output.mesh_geometry.faces;
+  mesh.mesh.vertices=output.mesh_geometry.vertices;
 }
-
 
 // Main definition
 int main (int argc, char **argv)
@@ -35,12 +34,12 @@ int main (int argc, char **argv)
   ros::NodeHandle n;
   
   //* Subscribe to the Point Cloud topic of the LiDAR
-  ros::Subscriber point_sub = n.subscribe("pointcloud", 100, cloud_callback);
+  ros::Subscriber point_sub = n.subscribe("mesh_geometry", 100, mesh_callback);
   //ros::Subscriber pose_sub = n.subscribe("odom",100,odom_callback);
  
-  ROS_INFO("Subscribed to the point cloud");
+  ROS_INFO("Subscribed to the mesh");
 
-  point_pub = n.advertise<sensor_msgs::PointCloud2>("checkpoint", 1000);
+  mesh_pub = n.advertise<mesh_msgs::TriangleMeshStamped>("output", 1000);
   //point_pub = n.advertise<nav_msgs::Odometry>("mesh_pos",1000); 
   
 
@@ -49,7 +48,7 @@ int main (int argc, char **argv)
   ros::Rate rate(0.5);
   while(ros::ok())
   {     
-     point_pub.publish(cloud);
+     mesh_pub.publish(mesh);
      //Wait for the next loop
      ros::spinOnce();
      rate.sleep();              

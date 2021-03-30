@@ -13,7 +13,7 @@
     <!-- <xacro:stairs stairs="15" xpos="0" ypos="0" zpos="0" /> -->
 
     <!-- Rollover Protection mode will add an additional stick on the top, use "true" or "false" to switch it. -->
-    <xacro:property name="rolloverProtection" value="false"/>
+    <xacro:property name="rolloverProtection" value="true"/>
 
     <!-- Debug mode will hung up the robot, use "true" or "false" to switch it. -->
     <xacro:if value="$(arg DEBUG)">

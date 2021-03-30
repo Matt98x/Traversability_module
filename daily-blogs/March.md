@@ -2,10 +2,31 @@
 - Re-organize the Readme.md
 - Write a bash or a docker image script to setup the repository when installed on another computer
 - Write a script to assign traversability on just the geometric properties of the mesh elements
-- Find a way to display the mesh on RViz (some form of SLAM might be required)
-- Test whether the robot movement deform the pointcloud (robot control is required)
-- Write an intermediate script for point cloud parameters adjustment(i.e. publication rate with respect to update rate) -> this is done to avoid big measurements errors by the LiDAR while the robot is moving, while still performing the mesh reconstraction at an appropriate rate
 - Correctly configure Dynamic robot localization
+- Create a simple trunk pose controller for the simulation environment (user-controlled)
+
+## March 30(Tuesday)
+- Modification of the readme
+- Creation of the progress slides(can be found at the start of the readme)
+- Creation of the tests proposals document(Can be found at the start of the readme)
+- Introduction of a simple position control to the robot(not user-controlled but simply moves in a origin-centered circumference with radius of 1.5 meters)
+- Made Rviz display the mesh in the topic /output and it is working(The delay is not optimal but can be adjusted) the robot movement don't seem to deform the pointcloud
+
+## March 28(Sunday)
+- Integration in the pipeline of the flow-regulator node
+
+## March 27(Saturday)
+- Creation of the general launcher for the traversability package
+- Research into how to display the generated mesh on Rviz
+- Creation of the localization system for the simulation environment(transformation between the world frame and the trunk)
+
+## March 26(Friday)
+- Modification to the script General.launch to increment the stability at launch and avoid the robot toppling over
+- Research into hardware requirements to run the code
+- Research into how to display the generated mesh on Rviz
+
+## March 25(Thursday)
+- Modification to the cloudpoint generation since 3D LiDAR is not available, now produced from rgb-d camera mounted on the front of the robot (code for the use of a 3D LiDAR have simply been commented)
 
 ## March 22(Monday)
 - Package reorganization
