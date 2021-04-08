@@ -45,7 +45,7 @@ int main (int argc, char **argv)
 
  
   //* Loop to publish the mesh continuously
-  ros::Rate rate(0.5);
+  ros::Rate rate(2);
   while(ros::ok())
   {     
      mesh_pub.publish(mesh);
