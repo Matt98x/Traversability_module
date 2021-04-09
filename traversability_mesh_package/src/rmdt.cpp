@@ -23,6 +23,7 @@ void mesh_callback (const mesh_msgs::MeshGeometryStampedConstPtr& msg)
   mesh.header=output.header;
   mesh.mesh.triangles=output.mesh_geometry.faces;
   mesh.mesh.vertices=output.mesh_geometry.vertices;
+	mesh.mesh.vertex_normals=output.mesh_geometry.vertex_normals;
 }
 
 // Main definition
