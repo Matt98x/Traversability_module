@@ -1,4 +1,2 @@
-[submodule "Third_parties/lvr_ros"]
-	url = https://github.com/uos/lvr_ros
 [submodule "Third_parties/mesh_tools"]
 	url = https://github.com/uos/mesh_tools
