@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="remote" default="false" />
+  <arg name="numClouds" default="1" />
+  <arg name="test" default="false" />
+
+  <node unless="$(arg remote)" pkg="lvr_ros" type="lvr_ros_reconstruction"
+      name="reconstruction" output="screen">
+    <!-- <remap from="pointcloud" to="riegl_cloud"/> -->
+    <remap from="mesh" to="assembled_mesh"/>
+    <rosparam command="load" file="$(find lvr_ros)/config/lvr_params.yaml" />
+  </node>
+
+  <node if="$(arg remote)" pkg="lvr_ros" type="lvr_ros_remote_reconstruction"
+      name="remote_reconstruction" output="screen">
+    <!-- <remap from="pointcloud" to="riegl_cloud"/> -->
+    <remap from="mesh" to="assembled_mesh"/>
+    <rosparam command="load" file="$(find lvr_ros)/config/lvr_params.yaml" />
+  </node>
+  <node if="$(arg remote)" pkg="lvr_ros" type="lvr_ros_remote_reconstruction_client"
+      name="remote_reconstruction_client" output="screen">
+    <!-- <remap from="pointcloud" to="riegl_cloud"/> -->
+    <remap from="mesh" to="assembled_mesh"/>
+    <param name="numClouds" type="int" value="$(arg numClouds)" />
+  </node>
+</launch>
