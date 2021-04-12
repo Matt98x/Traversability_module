@@ -6,7 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /TriangleMesh1
+        - /Mesh1
       Splitter Ratio: 0.5
     Tree Height: 246
   - Class: rviz/Selection
@@ -240,24 +240,36 @@ Visualization Manager:
       Transport Hint: raw
       Unreliable: false
       Value: true
-    - Class: rviz_mesh_plugin/TriangleMesh
+    - Buffer Size: 1
+      Class: rviz_map_plugin/Mesh
       Display Type:
+        Color Scale: Rainbow
         Faces Alpha: 1
         Faces Color: 0; 255; 0
+        Material Service Name: get_materials
+        Show textured faces only: false
+        Texture Service Name: get_texture
+        Use Custom limits:
+          Value: false
+          Vertex Costs Lower Limit: 0
+          Vertex Costs Upper Limit: 1
         Value: Fixed Color
+        Vertex Color Service Name: get_vertex_colors
+        Vertex Colors Topic: ""
+        Vertex Costs Topic: ""
+        Vertex Costs Type: -- None --
       Enabled: true
-      Mesh Buffer Size: 1
-      Name: TriangleMesh
+      Geometry Topic: /mesh_geometry
+      Name: Mesh
       Show Normals:
         Normals Alpha: 1
         Normals Color: 255; 0; 255
         Normals Scaling Factor: 0.10000000149011612
-        Value: false
+        Value: true
       Show Wireframe:
         Value: true
         Wireframe Alpha: 1
         Wireframe Color: 0; 0; 0
-      Topic: /output
       Value: true
   Enabled: true
   Global Options:
@@ -287,7 +299,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.509315252304077
+      Distance: 8.705166816711426
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -302,10 +314,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.43539801239967346
+      Pitch: 0.17539800703525543
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.7453979849815369
+      Yaw: 0.4953978657722473
     Saved: ~
 Window Geometry:
   Displays:
@@ -325,5 +337,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1024
-  X: -1
-  Y: -22
+  X: 0
+  Y: 0

@@ -5,6 +5,42 @@
 - Correctly configure Dynamic robot localization
 - Create a simple trunk pose controller for the simulation environment (user-controlled)
 
+## April 12 (Monday)
+- Retrieved the student pass so that on Wednesday I can go to the lab
+- After yesterday modifications to enable the installation in other computers, I tried to change the nature of the submodules inside the package. Unfortunately, this led to the corruption of the repository, which modified expecially the rviz\_mesh\_plugin package. In fact, after I set the repository back to a previous commit, the package disappeared and I could not retrieve it. After downloading a package with the same name and same nature, and after building and sourcing, this message appeared:
+```
+[ERROR] [1618260240.824223000, 20.986000000]: PluginlibFactory: The plugin for class 'rviz_mesh_plugin/TriangleMesh' failed to load.  Error: According to the loaded plugin descriptions the class rviz_mesh_plugin/TriangleMesh with base class type rviz::Display does not exist. Declared types are  octomap_rviz_plugin/ColorOccupancyGrid octomap_rviz_plugin/OccupancyGrid octomap_rviz_plugin/OccupancyGridStamped octomap_rviz_plugin/OccupancyMap octomap_rviz_plugin/OccupancyMapStamped rtabmap_ros/Info rtabmap_ros/MapCloud rtabmap_ros/MapGraph rviz/Axes rviz/Camera rviz/DepthCloud rviz/Effort rviz/FluidPressure rviz/Grid rviz/GridCells rviz/Illuminance rviz/Image rviz/InteractiveMarkers rviz/LaserScan rviz/Map rviz/Marker rviz/MarkerArray rviz/Odometry rviz/Path rviz/PointCloud rviz/PointCloud2 rviz/PointStamped rviz/Polygon rviz/Pose rviz/PoseArray rviz/PoseWithCovariance rviz/Range rviz/RelativeHumidity rviz/RobotModel rviz/TF rviz/Temperature rviz/WrenchStamped rviz_map_plugin/ClusterLabel rviz_map_plugin/Map3D rviz_map_plugin/Mesh rviz_plugin_tutorials/Imu
+```  
+Which, in a tutorial on ros.org was related to some mistake in the mmanifest(synonim for package.xml), but in this case, this problem was not found.  
+Further investigations revealed that the package, although in the catkin list, was not in the package stack, which is strange because I can do a catkin\_make\_isolated, but not a roscd or a rospack.  
+I then tried to do a catkin\_make and sourcing the devel setup script, finally obtaining the plugin on rviz, but when I tried launching the package this error appeared:
+```
+[ERROR] [1618259896.975292700, 21.726000000]: PluginlibFactory: The plugin for class 'rviz_mesh_plugin/TriangleMesh' failed to load.  Error: Could not find library corresponding to plugin rviz_mesh_plugin/TriangleMesh. Make sure the plugin description XML file has the correct name of the library and that the library actually exists.
+```  
+Furthermore, I could not launch the scripts of the package.  
+After another research session I found out why the package have disappeared: In the most updated version of the mesh tool, the package have been deleted, which leave me to choose between two strategies:
+	- Use the last version of the tool and re-adapt how I display the mesh, which would imply having all the advantages of the most recent version at the cost of having to update my display strategy every time the package is modified
+	-.Look for the version I have used till now and never update the package again, which would allow to work with something I have already produced and even introduce changes of my own, at the cost of all the problem this version might have
+
+Since I can't seem to find the version, for now I will modify my work to use the latest version.  
+Now the display use the message mesh_msgs/MeshGeometryStamped and reads directly the reconstruction output.
+
+## April 11 (Sunday)
+- I produced the bash installation script: the script automatically set the environment compile the code and should be able to install all the libraries. Unfortunately, there are some problems in the installation:
+	- Some packages are not downloaded properly through the git process, the folders are in place but they are empty. I'm working on it, trying to modifying the packages from being submodules, I think this is the problem. 
+	- I could not use rosdep feature because it has not been initialized on the computer and I tried to initialize it using the super user credentials( I thought they were active and the passworld were the same as my Gaspar credentials)
+	- I found out that there is a package I have not considered(lvr2), which I will add to the structure as an auxiliary(I will try to install in a way that will be correctly installed in other computers)
+  
+At any rate, from the trials I made on my computer all commands are correcly executed and working, but the environment is not compliant, In the trials I made the rosdep install does not require the sudo command while the rosdep init seems to require it.
+
+regarding the bug I talked about on the 9th, here's the transcription:  
+```
+lvr_ros_reconstruction: /usr/include/boost/smart_ptr/shared_array.hpp:199: T& boost::shared_array<T>::operator[](std::ptrdiff_t) const [with T = float; std::ptrdiff_t = long int]: Assertion `px != 0' failed.
+/root/Desktop/Thesis_workspace/devel_isolated/lvr_ros/lib/lvr_ros/lvr_ros_reconstruction: line 1:  8210 Aborted                 $0 $@
+\[lvr-11\] process has died \[pid 7882, exit code 134, cmd bash -c sleep 50; $0 $@ /root/Desktop/Thesis_workspace/devel_isolated/lvr_ros/lib/lvr_ros/lvr_ros_reconstruction -d /root/Desktop/Thesis_workspace/src/Traversability_module/Third_parties/Robot/unitree_ros/unitree_gazebo/rviz/interface.rviz __name:=lvr __log:=/root/.ros/log/54e5e20a-9add-11eb-8d6f-0242ac110002/lvr-11.log\].
+log file: /root/.ros/log/54e5e20a-9add-11eb-8d6f-0242ac110002/lvr-11*.log  
+```
+Again, a temporary solution have been found commenting the portion related to texture and color, in the function at line 90 of the script conversion.cpp (inside the src folder of the lvr\_ros package,part of the third\_parties folder). This allows to avoid the use of the boost library by avoiding the function call, in later work I will pin-point the function in which I use it, once I have it I can try to correct the problem or mantain as much code as I can 
 
 ## April 9 (Friday)
 - A bug have appeared after the modifications I have done yesterday(most probably the correction I have done to solve it previously have been deleted by some error in merging and updating the repository): Inside the lvr_ros package an error occur where the condition px!=0 is not satisfied, as far as the debug has explored the problem is caused by something in the boost library when the method tries to handle the color and textures components of the pointcloud, but the specifics are yet to be explored in depth...A temporary solution have been found commenting the portion related to texture and color, in the function at line 90 of the script conversion.cpp (inside the src folder of the lvr\_ros package,part of the third\_parties folder)
