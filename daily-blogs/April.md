@@ -5,6 +5,7 @@
 - Correctly configure Dynamic robot localization
 - Create a simple trunk pose controller for the simulation environment (user-controlled)
 
+
 ## April 12 (Monday)
 - Retrieved the student pass so that on Wednesday I can go to the lab
 - After yesterday modifications to enable the installation in other computers, I tried to change the nature of the submodules inside the package. Unfortunately, this led to the corruption of the repository, which modified expecially the rviz\_mesh\_plugin package. In fact, after I set the repository back to a previous commit, the package disappeared and I could not retrieve it. After downloading a package with the same name and same nature, and after building and sourcing, this message appeared:
@@ -25,6 +26,8 @@ After another research session I found out why the package have disappeared: In 
 Since I can't seem to find the version, for now I will modify my work to use the latest version.  
 Now the display use the message mesh_msgs/MeshGeometryStamped and reads directly the reconstruction output.
 
+=======
+>>>>>>> main
 ## April 11 (Sunday)
 - I produced the bash installation script: the script automatically set the environment compile the code and should be able to install all the libraries. Unfortunately, there are some problems in the installation:
 	- Some packages are not downloaded properly through the git process, the folders are in place but they are empty. I'm working on it, trying to modifying the packages from being submodules, I think this is the problem. 
@@ -33,6 +36,7 @@ Now the display use the message mesh_msgs/MeshGeometryStamped and reads directly
   
 At any rate, from the trials I made on my computer all commands are correcly executed and working, but the environment is not compliant, In the trials I made the rosdep install does not require the sudo command while the rosdep init seems to require it.
 
+<<<<<<< HEAD
 regarding the bug I talked about on the 9th, here's the transcription:  
 ```
 lvr_ros_reconstruction: /usr/include/boost/smart_ptr/shared_array.hpp:199: T& boost::shared_array<T>::operator[](std::ptrdiff_t) const [with T = float; std::ptrdiff_t = long int]: Assertion `px != 0' failed.
@@ -41,6 +45,17 @@ lvr_ros_reconstruction: /usr/include/boost/smart_ptr/shared_array.hpp:199: T& bo
 log file: /root/.ros/log/54e5e20a-9add-11eb-8d6f-0242ac110002/lvr-11*.log  
 ```
 Again, a temporary solution have been found commenting the portion related to texture and color, in the function at line 90 of the script conversion.cpp (inside the src folder of the lvr\_ros package,part of the third\_parties folder). This allows to avoid the use of the boost library by avoiding the function call, in later work I will pin-point the function in which I use it, once I have it I can try to correct the problem or mantain as much code as I can 
+=======
+regarding the bug I talked about on the 9th, here's the transcription:
+'''
+lvr_ros_reconstruction: /usr/include/boost/smart_ptr/shared_array.hpp:199: T& boost::shared_array<T>::operator[](std::ptrdiff_t) const [with T = float; std::ptrdiff_t = long int]: Assertion `px != 0' failed.
+/root/Desktop/Thesis_workspace/devel_isolated/lvr_ros/lib/lvr_ros/lvr_ros_reconstruction: line 1:  8210 Aborted                 $0 $@
+\[lvr-11\] process has died \[pid 7882, exit code 134, cmd bash -c sleep 50; $0 $@ /root/Desktop/Thesis_workspace/devel_isolated/lvr_ros/lib/lvr_ros/lvr_ros_reconstruction -d /root/Desktop/Thesis_workspace/src/Traversability_module/Third_parties/Robot/unitree_ros/unitree_gazebo/rviz/interface.rviz __name:=lvr __log:=/root/.ros/log/54e5e20a-9add-11eb-8d6f-0242ac110002/lvr-11.log\].
+log file: /root/.ros/log/54e5e20a-9add-11eb-8d6f-0242ac110002/lvr-11*.log
+'''
+Again, a temporary solution have been found commenting the portion related to texture and color, in the function at line 90 of the script conversion.cpp (inside the src folder of the lvr\_ros package,part of the third\_parties folder). This allows to avoid the use of the boost library by avoiding the function call, in later work I will pin-point the function in which I use it, once I have it I can try to correct the problem or mantain as much code as I can 
+
+>>>>>>> main
 
 ## April 9 (Friday)
 - A bug have appeared after the modifications I have done yesterday(most probably the correction I have done to solve it previously have been deleted by some error in merging and updating the repository): Inside the lvr_ros package an error occur where the condition px!=0 is not satisfied, as far as the debug has explored the problem is caused by something in the boost library when the method tries to handle the color and textures components of the pointcloud, but the specifics are yet to be explored in depth...A temporary solution have been found commenting the portion related to texture and color, in the function at line 90 of the script conversion.cpp (inside the src folder of the lvr\_ros package,part of the third\_parties folder)
