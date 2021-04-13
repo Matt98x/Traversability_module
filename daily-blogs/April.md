@@ -19,9 +19,10 @@ I then tried to do a catkin\_make and sourcing the devel setup script, finally o
 [ERROR] [1618259896.975292700, 21.726000000]: PluginlibFactory: The plugin for class 'rviz_mesh_plugin/TriangleMesh' failed to load.  Error: Could not find library corresponding to plugin rviz_mesh_plugin/TriangleMesh. Make sure the plugin description XML file has the correct name of the library and that the library actually exists.
 ```  
 Furthermore, I could not launch the scripts of the package.  
-After another research session I found out why the package have disappeared: In the most updated version of the mesh tool, the package have been deleted, which leave me to choose between two strategies:
-	- Use the last version of the tool and re-adapt how I display the mesh, which would imply having all the advantages of the most recent version at the cost of having to update my display strategy every time the package is modified
-	-.Look for the version I have used till now and never update the package again, which would allow to work with something I have already produced and even introduce changes of my own, at the cost of all the problem this version might have
+After another research session I found out why the package have disappeared: In the most updated version of the mesh tool, the package have been deleted.  
+This leaves me to choose between two strategies:  
+	- Use the last version of the tool and re-adapt how I display the mesh, which would imply having all the advantages of the most recent version at the cost of having to update my display strategy every time the package is modified  
+	- Look for the version I have used till now and never update the package again, which would allow to work with something I have already produced and even introduce changes of my own, at the cost of all the problem this version might have
 
 Since I can't seem to find the version, for now I will modify my work to use the latest version.  
 Now the display use the message mesh_msgs/MeshGeometryStamped and reads directly the reconstruction output.
