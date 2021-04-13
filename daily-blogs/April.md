@@ -5,6 +5,13 @@
 - Correctly configure Dynamic robot localization
 - Create a simple trunk pose controller for the simulation environment (user-controlled)
 
+## April 13 (Tuesday)
+- Updated Professor Solari on the state of the project and rapidly read the paper he gave me to compute the rugosity of the terrain in relation to the number of points I use (this problem arise from the fact that the density of the poincloud is related to the distance from the robot), unfortunately the method cannot be easily applied to my case. A possible solution might be to multiply the rugosity by some coefficient related to the real area of the mesh element and the certainty related to the distance from the robot.
+- Introduced the synchronizer inside the flow_regulator
+- Extracted the transformation between the Lidar and the robot torso to enable the extraction of the global position of the points in the PointCloud; Which will be useful when we will study the traversability
+- I extracted a way of determining the most useful normal to each mesh elemen; The main concept is that the dot product of the normal and the vector connecting the Lidar origin and the element baricenter should have negative sign 
+- I think I will add another synchronizer for the processing nodes since I have to impose a strong condition on working on data all related to the same time slice, this complicate a bit the computation of the worst computational time since every process is related. To solve this, we can compute the difference between the time at which the output is published and the timestamp of the message itself
+- I'm exploring the possibilty of using multi-threading for all computations inside the feature extraction nodes and the traversability score calculator
 
 ## April 12 (Monday)
 - Retrieved the student pass so that on Wednesday I can go to the lab
