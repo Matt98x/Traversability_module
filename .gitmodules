@@ -4,3 +4,6 @@
 [submodule "Third_parties/Mesh/lvr_ros"]
 	path = Third_parties/Mesh/lvr_ros
 	url = https://github.com/uos/lvr_ros.git
+[submodule "Third_parties/Mesh/lvr2"]
+	path = Third_parties/Mesh/lvr2
+	url = https://github.com/uos/lvr2.git
