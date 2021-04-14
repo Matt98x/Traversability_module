@@ -1,0 +1,3 @@
+[submodule "Third_parties/Mesh/mesh_tools"]
+	path = Third_parties/Mesh/mesh_tools
+	url = https://github.com/uos/mesh_tools.git
