@@ -53,7 +53,7 @@ int main(int argc, char **argv)
         model_state_pub.reference_frame = "world";
 
         long long time_ms = 0;  //time, ms
-        const double period = 1000; //ms
+        const double period = 3000; //ms
         const double radius = 1.5;    //m
         tf::Quaternion q;
         while(ros::ok())

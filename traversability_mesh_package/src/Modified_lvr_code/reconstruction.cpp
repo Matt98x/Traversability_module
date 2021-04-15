@@ -579,7 +579,7 @@ int main(int argc, char **args)
     // ros::spin();
 
 
-    ros::MultiThreadedSpinner spinner(4); // Use 4 threads
+    ros::MultiThreadedSpinner spinner(8); // Use 4 threads
     spinner.spin(); // spin() will not return until the node has been shutdown
     return 0;
 }
