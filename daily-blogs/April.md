@@ -5,6 +5,12 @@
 - Correctly configure Dynamic robot localization
 - Create a simple trunk pose controller for the simulation environment (user-controlled)
 
+## April 15 (Thursdaz)
+- Finally installed the package on the the computer assigned to me:
+	- I had to temporarily get rid of the dynamic robot localization package since it helped speeding up the installation 
+	- I got rid of the unitree\_legged\_real, since it needed a working lcm-1.4.0 package which I have yet to fix, but since i'm not interested in the robot control is actually fine
+	- The code is finally running with decent performance, 27 fps in the rviz simulation against the 1fps of the virtual machine on my pc
+	- The problem that arouse is the wrong measurements I've been taking of the lvr-ros reconstruction performance: I thought the computational time for one element would be around 100 ms because I was taking the computational time as being the input rate in ms plus the time the node took to compute the mesh. Instead I find myself with a total computational rate for the node of 0.54 Hz. The ripercussions of this fact are not really a ptroblem if the robot speed is relatively low(for example 0.5 m/s) but could become really complicated if the movement speed was higher or if the angular deviation inbetween mesh computation was over a certain threshold. For the most part there are no real solutions, but to either adapt the robot movement to the mesh reconstruction contraints or to change the reconstruction algorithm to be more efficient(reducing the pointcloud density or the field of view). Both of these possibilities have been studied but I haven't decided on which implementing since I would like to know the application conditions first.
 
 ## April 14 (Wednesday)
 - Esperience in the lab to understand the robot and its control:
