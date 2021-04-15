@@ -5,13 +5,30 @@
 - Correctly configure Dynamic robot localization
 - Create a simple trunk pose controller for the simulation environment (user-controlled)
 
+
+## April 14 (Wednesday)
+- Esperience in the lab to understand the robot and its control:
+	- Practiced with the robot control, moving it around, switching between control modes and trying to memorize the commands
+	- Analyzed the architectural structure of the robot with its three computers:
+		- Raspberry Pi: with its interfaces (Hdmi and 2 usb ports) in the frontal part of the robot(near the camera), is a soft real time computer running Ubuntu 16.04 without a ROS environment. It is directly connected to the Robot controller via ethernet connection and will be the one used to receive the motion controls from the user
+		- Nvidia TX2: is a non real time computer placed in the rear part of the robot that handles the optional capabilities of the robot(SLAM algorithm and interface with the APP). This system is running Ubuntu bionic 18.04.4 and might be use to run the package or to extract the data to be used in the package(PointCloud and image) via UDP or TCP connection with an external computer.
+		- Robot control: it's a hard real-time system which seem to be inaccessible to the user and takes commands via ethernet from the Raspberry Pi. Has two addresses, one for the Normal control and one for the sport control, handling the movement via two types of messagges: low-level and high level. The first is mainly focused in controlling the motor toque, velocity and position. The second focuses on controlling on a higher level the speed of the robot, its orientation, the step high and so on.
+- Research into the use of UDP or TCP transmission of PointClouds and images:
+	- Found some examples that use the kinect to do it, with a python code at this [link](https://forum.processing.org/two/discussion/11090/kinect-depth-data-via-udp), with the problems of trying to substitute the kinect with the realsense device while understanding how the compression used in the code might influence the transmission and the performance of my code.
+	- I've yet to find some code to extract the data from the robot sensors, since the suspicion is that I could have them through one of the many ethernet connection of the TX2 system, but it is yet to be proved.
+	- If the code is to be runned externally to the robot some portable device is to be used when testing outdoor. Tests must be performed on my computer to see whether it can perform this task.
+- Modification of the repository structure to have submodules:
+	- All the packages in the "Third_parties/Mesh" folder have been converted in fully functional submodules, with the .submodules accounting for the correct URL and path inside my repository
+	- The dynamic robot localization packages have been temporarily deleted to improve installation and building time expecially when for now they are not utilized. When they will be useful again I will install them as submodules
+- Research into monkey patching for the lvr-ros script (conversion.cpp): no public solution have been found, for now the phylosofy will be, in the installation script, to sobstitute the script inside the folder with one saved in the traversability\_mesh\_package with the one present in lvr_ros, and every time the submodule is updated running the installation script. This solution will work momentarily, until there won't be an error running the catkin\_make with the updated lvr-ros package. 
+ 
 ## April 13 (Tuesday)
 - Updated Professor Solari on the state of the project and rapidly read the paper he gave me to compute the rugosity of the terrain in relation to the number of points I use (this problem arise from the fact that the density of the poincloud is related to the distance from the robot), unfortunately the method cannot be easily applied to my case. A possible solution might be to multiply the rugosity by some coefficient related to the real area of the mesh element and the certainty related to the distance from the robot.
 - Introduced the synchronizer inside the flow_regulator
 - Extracted the transformation between the Lidar and the robot torso to enable the extraction of the global position of the points in the PointCloud; Which will be useful when we will study the traversability
-- I extracted a way of determining the most useful normal to each mesh elemen; The main concept is that the dot product of the normal and the vector connecting the Lidar origin and the element baricenter should have negative sign 
+- I extracted a way of determining the most useful normal to each mesh element; The main concept is that the dot product of the normal and the vector connecting the Lidar origin and the element baricenter should have negative sign 
 - I think I will add another synchronizer for the processing nodes since I have to impose a strong condition on working on data all related to the same time slice, this complicate a bit the computation of the worst computational time since every process is related. To solve this, we can compute the difference between the time at which the output is published and the timestamp of the message itself
-- I'm exploring the possibilty of using multi-threading for all computations inside the feature extraction nodes and the traversability score calculator
+- I'm exploring the possibilty of using multi-threading for all computations inside the feature extraction nodes and the traversability score calculator as to improve the required computational time.
 
 ## April 12 (Monday)
 - Retrieved the student pass so that on Wednesday I can go to the lab
