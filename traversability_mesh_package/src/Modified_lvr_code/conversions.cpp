@@ -100,7 +100,7 @@ bool fromMeshBufferToMeshMessages(
     size_t n_faces = buffer->numFaces();
 
     // copy vertices, faces and normals
-    fromMeshBufferToMeshGeometryMessage(buffer, mesh_geometry);
+    fromMeshBufferToMeshGeometryMessage(buffer, mesh_geometry); 
 
     //size_t n_clusters = buffer->; TODO Clusters?
     // Copy clusters

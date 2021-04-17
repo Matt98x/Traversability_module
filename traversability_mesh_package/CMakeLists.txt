@@ -26,8 +26,11 @@ set(PACKAGE_DEPENDENCIES
 find_package(catkin REQUIRED COMPONENTS ${PACKAGE_DEPENDENCIES})
 find_package(LVR2 REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(PCL 1.2 REQUIRED)
 
-
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 add_definitions(${LVR2_DEFINITIONS} ${OpenCV_DEFINITIONS})
 
 ## System dependencies are found with CMake's conventions
@@ -110,6 +113,7 @@ target_link_libraries(flow_regulator
   ${LVR2_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${MPI_CXX_LIBRARIES}
+	${PCL_LIBRARIES}
 )
 add_dependencies(flow_regulator ${catkin_EXPORTED_TARGETS})
 

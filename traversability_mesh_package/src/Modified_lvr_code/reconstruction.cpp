@@ -90,7 +90,7 @@ Reconstruction::Reconstruction()
     ros::NodeHandle nh("~");
 
     cloud_subscriber = node_handle.subscribe(
-        "/pointcloud",
+        "/checkpoint",
         1,
         &Reconstruction::pointCloudCallback,
         this

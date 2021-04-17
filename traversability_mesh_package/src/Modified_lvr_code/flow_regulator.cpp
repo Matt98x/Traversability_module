@@ -8,10 +8,6 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <boost/bind.hpp>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/filters/voxel_grid.h>
 
 using namespace sensor_msgs;
 using namespace nav_msgs;
@@ -32,62 +28,37 @@ void callback(const ImageConstPtr& msg1, const sensor_msgs::PointCloud2::ConstPt
 	sensor_msgs::Image output1;
 	sensor_msgs::PointCloud2 output2;
   nav_msgs::Odometry output3;
-/*
-  //* Do data processing here... In this case we want to downsample the pointcloud message 
-  // Container for original & filtered data
-  pcl::PCLPointCloud2* cloud_in = new pcl::PCLPointCloud2; 
-  pcl::PCLPointCloud2ConstPtr cloudPtr(cloud_in);
-  pcl::PCLPointCloud2 cloud_filtered;
 
-  // Convert to PCL data type
-  pcl_conversions::toPCL(*msg2, *cloud_in);
-
-  // Perform the actual filtering
-  pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
-  sor.setInputCloud (cloudPtr);
- 	float k=2; //Size of the voxel used to downsample the pointcloud [m]
-  sor.setLeafSize (k*0.1, k*0.1, k*0.1);
-  sor.filter (cloud_filtered);
-
-  // Convert to ROS data type
-  pcl_conversions::fromPCL(cloud_filtered, output2);
-*/
-  //* Input the data in the global variables
+  //* Do data processing here... In this case we are just assigning the values to the global variables 
   output1 = *msg1;
   image=output1;
-  //cloud=output2;
+  output2 = *msg2;
+  cloud=output2;
   output3 = *msg3;
   odom=output3;
+}
+
+//* Function to extract the odometry
+void odom_callback (const nav_msgs::Odometry::ConstPtr& msg){
+	//* Create a container for the data.
+  nav_msgs::Odometry output;
+
+  //* Do data processing here...
+  output = *msg;
+  odom=output;
 }
 
 //* Function to extract the Point Cloud
 void cloud_callback (const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
  //* Create a container for the data.
-  sensor_msgs::PointCloud2 output2;
-  //* Do data processing here... In this case we want to downsample the pointcloud message 
-  // Container for original & filtered data
-  pcl::PCLPointCloud2* cloud_in = new pcl::PCLPointCloud2; 
-  pcl::PCLPointCloud2ConstPtr cloudPtr(cloud_in);
-  pcl::PCLPointCloud2 cloud_filtered;
+  sensor_msgs::PointCloud2 output;
 
-  // Convert to PCL data type
-  pcl_conversions::toPCL(*msg, *cloud_in);
-
-  // Perform the actual filtering
-  pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
-  sor.setInputCloud (cloudPtr);
- 	float k=1; //Size of the voxel used to downsample the pointcloud [m]
-  sor.setLeafSize (k*0.1, k*0.1, k*0.1);
-  sor.filter (cloud_filtered);
-
-  // Convert to ROS data type
-  pcl_conversions::fromPCL(cloud_filtered, output2);
   //* Do data processing here...
-  
-  cloud=output2;
-  point_pub.publish(cloud);
+  output = *msg;
+  cloud=output;
 }
+
 
 // Main definition
 int main (int argc, char **argv)
@@ -98,8 +69,8 @@ int main (int argc, char **argv)
   ros::NodeHandle n;
   
   //* Subscribe to the Point Cloud topic of the LiDAR
-
-  ros::Subscriber point_sub = n.subscribe("pointcloud", 100, cloud_callback); /*
+/*
+  ros::Subscriber point_sub = n.subscribe("pointcloud", 100, cloud_callback);
   ros::Subscriber pose_sub = n.subscribe("odom",100,odom_callback);
 */
   point_pub = n.advertise<sensor_msgs::PointCloud2>("checkpoint", 1000);
@@ -117,7 +88,7 @@ int main (int argc, char **argv)
   ros::Rate rate(5);
   while(ros::ok())
   {     
-     
+     point_pub.publish(cloud);
 		 odom_pub.publish(odom);
 		 image_pub.publish(image);
 
