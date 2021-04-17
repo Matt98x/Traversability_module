@@ -5,7 +5,18 @@
 - Correctly configure Dynamic robot localization
 - Create a simple trunk pose controller for the simulation environment (user-controlled)
 
-## April 15 (Thursdaz)
+## April 16 (Saturday)
+- Worked on incrementing the mesh generation rate of the package(Since the 0.6 Hz of the previous version were not deemed enough for the control system), to do this the following moduification were done to the flow regulator:
+	- The pointcloud is now downsampled using a voxel-based method present in the ros pcl library. As a parameter the side of the voxel(tridimensional analog of the square grid element) the value of 0.1 m was choosen to trade off between mesh precision and mesh creation rate. For a side of 0.2 m the creation rate was around 2.7 but the mesh quality and dimension was considered unacceptable for use.
+	- The pointcloud callback is moved from the synchronizer to an external one because there is a strange interaction for which the rate was gravely affected.
+- Other ways of incrementing the rate have been studied:
+	- modifying the number of thread used in the mesh reconstruction (no appreciable impreovement)
+	- Parallelizing multiple mesh reconstruction nodes is one considered but not yet implemented method. To analyze it is a bit complicated as two measures have to be considered: the temporal density of the available meshes and their temporal phase. These are their description:  
+		- the temporal phase can be seen as the impulse response delay of the mesh creation system, if this is reduced the system is more responsive and the robot is using more recent information to decide its movement(This is what happens with today's modifications) 		
+		- the temporal density is useful to describe how dense is the mesh set over space, and, for contained and slow movement has the same appearant result of decreasing the phase. The only difference is that while decreasing the phase increment the number of recently created meshes, increasing the density increases the number of older information used. As said for contained movement speeds, this is absolutely equivalent and does not influence the mesh precision     
+	This method has the great advantage of incrementing the temporal density at the cost of more computational power
+
+## April 15 (Thursday)
 - Finally installed the package on the the computer assigned to me:
 	- I had to temporarily get rid of the dynamic robot localization package since it helped speeding up the installation 
 	- I got rid of the unitree\_legged\_real, since it needed a working lcm-1.4.0 package which I have yet to fix, but since i'm not interested in the robot control is actually fine
