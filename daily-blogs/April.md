@@ -5,7 +5,15 @@
 - Correctly configure Dynamic robot localization
 - Create a simple trunk pose controller for the simulation environment (user-controlled)
 
-## April 16 (Saturday)
+## April 20 (Tuesday)
+- Worked on the relationship between the mesh production rate, the  delay and the robot control application:
+	- Generated a matlab script to represent these characteristics with the development of a method to visualiye all possible configurations of the robot as a function of the maximum linear and angular velocities, and the time delay.
+	- Considered the consequenses of the parallelizing the mesh production to increment the mesh production rate even if the time delay between pointcloud acquisition and mesh creation. Even if it might seem useless, it may increment the robustness of the system.
+- Slightly modified the structure of the architecture so that the synchronization is done after the the mesh creation   
+- Modified the synchroniyer to utilize the ApproximateTime policy to speed up the synchronization algorithm.
+- Put the basis of the geometrical features extraction
+ 
+## April 18 (Saturday)
 - Worked on incrementing the mesh generation rate of the package(Since the 0.6 Hz of the previous version were not deemed enough for the control system), to do this the following moduification were done to the flow regulator:
 	- The pointcloud is now downsampled using a voxel-based method present in the ros pcl library. As a parameter the side of the voxel(tridimensional analog of the square grid element) the value of 0.1 m was choosen to trade off between mesh precision and mesh creation rate. For a side of 0.2 m the creation rate was around 2.7 but the mesh quality and dimension was considered unacceptable for use.
 	- The pointcloud callback is moved from the synchronizer to an external one because there is a strange interaction for which the rate was gravely affected.

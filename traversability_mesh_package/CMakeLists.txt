@@ -12,6 +12,7 @@ set(PACKAGE_DEPENDENCIES
   roscpp
   sensor_msgs
   geometry_msgs
+  nav_msgs
   label_manager
   tf2_ros
   lvr_ros
@@ -47,13 +48,20 @@ add_definitions(${LVR2_DEFINITIONS} ${OpenCV_DEFINITIONS})
 ################################################
 
 
+add_message_files(
+  FILES
+  Base.msg
+)
+
 generate_messages(
   DEPENDENCIES
   actionlib_msgs
   mesh_msgs
   sensor_msgs
   geometry_msgs
+  nav_msgs
 )
+
 
 
 
@@ -106,7 +114,21 @@ include_directories(
   ${lvr_ros_INCLUDE_DIRS}
 )
 
+## EXECUTABLES
 
+## cloud handler executable
+add_executable(cloud_handler src/cloud_handler.cpp)
+target_link_libraries(cloud_handler
+  ${catkin_LIBRARIES}
+  ${LVR2_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${MPI_CXX_LIBRARIES}
+	${PCL_LIBRARIES}
+)
+add_dependencies(cloud_handler ${catkin_EXPORTED_TARGETS})
+
+
+## Flow regulator executable
 add_executable(flow_regulator src/flow_regulator.cpp)
 target_link_libraries(flow_regulator
   ${catkin_LIBRARIES}
@@ -116,6 +138,15 @@ target_link_libraries(flow_regulator
 	${PCL_LIBRARIES}
 )
 add_dependencies(flow_regulator ${catkin_EXPORTED_TARGETS})
+
+## Geometry features extractor executable
+add_executable(geometry_extractor src/geometry_extractor.cpp)
+target_link_libraries(geometry_extractor
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${MPI_CXX_LIBRARIES}
+)
+add_dependencies(geometry_extractor ${catkin_EXPORTED_TARGETS})
 
 add_executable(rmdt src/rmdt.cpp)
 target_link_libraries(rmdt
