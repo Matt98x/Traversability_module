@@ -51,6 +51,8 @@ add_definitions(${LVR2_DEFINITIONS} ${OpenCV_DEFINITIONS})
 add_message_files(
   FILES
   Base.msg
+	GeoFeature.msg
+	Proximals.msg
 )
 
 generate_messages(

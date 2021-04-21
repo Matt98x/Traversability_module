@@ -5,6 +5,12 @@
 - Correctly configure Dynamic robot localization
 - Create a simple trunk pose controller for the simulation environment (user-controlled)
 
+## April 21 (Wednesday)
+- Worked on the production of the Geometry feature extraction:
+	- Developing the algorithms and optimizing them to find (for each face): the position of the vertices in the world reference system, baricenter, orientation, slope and neighbor faces
+	- Building up the multi-threaded structure of the system, as to improve the performance of the computations
+	- Creating the messages that will allow me to communicate the features to the traversability score calculator
+==========
 ## April 20 (Tuesday)
 - Worked on the relationship between the mesh production rate, the  delay and the robot control application:
 	- Generated a matlab script to represent these characteristics with the development of a method to visualiye all possible configurations of the robot as a function of the maximum linear and angular velocities, and the time delay.
@@ -12,7 +18,7 @@
 - Slightly modified the structure of the architecture so that the synchronization is done after the the mesh creation   
 - Modified the synchroniyer to utilize the ApproximateTime policy to speed up the synchronization algorithm.
 - Put the basis of the geometrical features extraction
- 
+ ==========
 ## April 18 (Saturday)
 - Worked on incrementing the mesh generation rate of the package(Since the 0.6 Hz of the previous version were not deemed enough for the control system), to do this the following moduification were done to the flow regulator:
 	- The pointcloud is now downsampled using a voxel-based method present in the ros pcl library. As a parameter the side of the voxel(tridimensional analog of the square grid element) the value of 0.1 m was choosen to trade off between mesh precision and mesh creation rate. For a side of 0.2 m the creation rate was around 2.7 but the mesh quality and dimension was considered unacceptable for use.
@@ -23,14 +29,14 @@
 		- the temporal phase can be seen as the impulse response delay of the mesh creation system, if this is reduced the system is more responsive and the robot is using more recent information to decide its movement(This is what happens with today's modifications) 		
 		- the temporal density is useful to describe how dense is the mesh set over space, and, for contained and slow movement has the same appearant result of decreasing the phase. The only difference is that while decreasing the phase increment the number of recently created meshes, increasing the density increases the number of older information used. As said for contained movement speeds, this is absolutely equivalent and does not influence the mesh precision     
 	This method has the great advantage of incrementing the temporal density at the cost of more computational power
-
+=========
 ## April 15 (Thursday)
 - Finally installed the package on the the computer assigned to me:
 	- I had to temporarily get rid of the dynamic robot localization package since it helped speeding up the installation 
 	- I got rid of the unitree\_legged\_real, since it needed a working lcm-1.4.0 package which I have yet to fix, but since i'm not interested in the robot control is actually fine
 	- The code is finally running with decent performance, 27 fps in the rviz simulation against the 1fps of the virtual machine on my pc
 	- The problem that arouse is the wrong measurements I've been taking of the lvr-ros reconstruction performance: I thought the computational time for one element would be around 100 ms because I was taking the computational time as being the input rate in ms plus the time the node took to compute the mesh. Instead I find myself with a total computational rate for the node of 0.54 Hz. The ripercussions of this fact are not really a ptroblem if the robot speed is relatively low(for example 0.5 m/s) but could become really complicated if the movement speed was higher or if the angular deviation inbetween mesh computation was over a certain threshold. For the most part there are no real solutions, but to either adapt the robot movement to the mesh reconstruction contraints or to change the reconstruction algorithm to be more efficient(reducing the pointcloud density or the field of view). Both of these possibilities have been studied but I haven't decided on which implementing since I would like to know the application conditions first.
-
+=========
 ## April 14 (Wednesday)
 - Esperience in the lab to understand the robot and its control:
 	- Practiced with the robot control, moving it around, switching between control modes and trying to memorize the commands
@@ -46,7 +52,7 @@
 	- All the packages in the "Third_parties/Mesh" folder have been converted in fully functional submodules, with the .submodules accounting for the correct URL and path inside my repository
 	- The dynamic robot localization packages have been temporarily deleted to improve installation and building time expecially when for now they are not utilized. When they will be useful again I will install them as submodules
 - Research into monkey patching for the lvr-ros script (conversion.cpp): no public solution have been found, for now the phylosofy will be, in the installation script, to sobstitute the script inside the folder with one saved in the traversability\_mesh\_package with the one present in lvr_ros, and every time the submodule is updated running the installation script. This solution will work momentarily, until there won't be an error running the catkin\_make with the updated lvr-ros package. 
- 
+ =========
 ## April 13 (Tuesday)
 - Updated Professor Solari on the state of the project and rapidly read the paper he gave me to compute the rugosity of the terrain in relation to the number of points I use (this problem arise from the fact that the density of the poincloud is related to the distance from the robot), unfortunately the method cannot be easily applied to my case. A possible solution might be to multiply the rugosity by some coefficient related to the real area of the mesh element and the certainty related to the distance from the robot.
 - Introduced the synchronizer inside the flow_regulator
@@ -54,7 +60,7 @@
 - I extracted a way of determining the most useful normal to each mesh element; The main concept is that the dot product of the normal and the vector connecting the Lidar origin and the element baricenter should have negative sign 
 - I think I will add another synchronizer for the processing nodes since I have to impose a strong condition on working on data all related to the same time slice, this complicate a bit the computation of the worst computational time since every process is related. To solve this, we can compute the difference between the time at which the output is published and the timestamp of the message itself
 - I'm exploring the possibilty of using multi-threading for all computations inside the feature extraction nodes and the traversability score calculator as to improve the required computational time.
-
+======
 ## April 12 (Monday)
 - Retrieved the student pass so that on Wednesday I can go to the lab
 - After yesterday modifications to enable the installation in other computers, I tried to change the nature of the submodules inside the package. Unfortunately, this led to the corruption of the repository, which modified expecially the rviz\_mesh\_plugin package. In fact, after I set the repository back to a previous commit, the package disappeared and I could not retrieve it. After downloading a package with the same name and same nature, and after building and sourcing, this message appeared:
