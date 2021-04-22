@@ -15,7 +15,7 @@
   <node name="flow" pkg="traversability_mesh_package" type="flow_regulator" launch-prefix="bash -c 'sleep 30; $0 $@' "/>
 
   <!-- LAUNCHING THE GEOMETRY FEATURES EXTRACTOR -->
-  <node name="geometry_extractor" pkg="traversability_mesh_package" type="geometry_extractor" launch-prefix="bash -c 'sleep 40; $0 $@' "/>
+  <node name="geometry_extractor" pkg="traversability_mesh_package" type="geometry_extractor" launch-prefix="bash -c 'sleep 40; $0 $@' "/> 
 
 
 </launch>
