@@ -5,6 +5,14 @@
 - Correctly configure Dynamic robot localization
 - Create a simple trunk pose controller for the simulation environment (user-controlled)
 
+## April 23 (Friday)
+- Corrected all the bugs of the geometry features extractor:
+	- all fields have seemingly correct values
+  - it has a slight inefficiency till it gives multiple times some element neighbors in the neighbors list(it can be solved on the score calculator part)
+	- It gives additionally the areas, the slope, the direction in which the robot was pointing when the pointcloud was captured(All these will be used  in the score calculator)
+- Worked on the metrics to be applied in the geometrical score calculation
+
+========
 ## April 22 (Thrusday)
 - Completed the production of the geometry features extractor:
 	- Need to solve a bug in the neighbors calculation

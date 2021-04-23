@@ -162,11 +162,8 @@ void master_thread(traversability_mesh_package::Base param){
   
 	//* Initialize the output
 	traversability_mesh_package::GeoFeature output; // the output is the mesh plus the geometrical features that will be extracted now
-	output.header = param.odom.header;
-	float var_areas[n_faces]; 
-  float var_slopes[n_faces];
-	
-
+	output.header = param.odom.header; // Set the header as the one at the input
+  // Generates arrays of appropriate dimension
 	output.mesh.mesh_geometry.vertices=vector<geometry_msgs::Point>(n_faces);
 	output.mesh.mesh_geometry.faces=vector<mesh_msgs::TriangleIndices>(n_faces);
 	output.areas=vector<double>(n_faces);;
@@ -174,6 +171,11 @@ void master_thread(traversability_mesh_package::Base param){
 	output.normals=vector<geometry_msgs::Point>(n_faces);
 	output.baricenters=vector<geometry_msgs::Point>(n_faces);
   output.neighbors=vector<traversability_mesh_package::Proximals>(n_faces);
+	// sight direction (corrisponding to the robot x direction in the world reference frame)
+	output.sight_dir.x=temp.getX();
+	output.sight_dir.y=temp.getY();
+	output.sight_dir.z=temp.getZ(); 
+	
   //* Divide the faces among the number of servers
   
   // compute how many faces should go to each server
@@ -198,12 +200,15 @@ void server_thread(int index, int portion, Vertices *vertices, mesh_msgs::MeshGe
 	tf::Vector3 sum; // Variable to store the sum from which we can obtain the baricenter dividing by 3
 	tf::Vector3 temp1; // Temporary location where we can store points and perform calculations
 	tf::Vector3 temp2; // Temporary location where we can store points and perform calculation
-  
-
-  //* Loop over all the indices given to the server by the master
-  
-  for (int i=index*portion;i<(index+1)*portion;i++){
-		output->neighbors[i].proximals=vector<unsigned int>(30);
+  int last=(index+1)*portion; // The last index the server should consider is the one immidiately before the one at which the next server start
+	int a=0;
+  if((index+2)*portion>mesh.faces.size()){ // If there are no other servers
+		a=last;
+		last=mesh.faces.size(); // The last index is the one of the last server
+  }
+  //* Loop over all the indices given to the server by the master  
+  for (int i=index*portion;i<last;i++){
+		output->neighbors[i].proximals=vector<unsigned int>(20);
     //* Compute the real position of the vertices
 		mesh_msgs::TriangleIndices cur = mesh.faces[i]; // store the current face
 		sum*=0;
@@ -212,7 +217,6 @@ void server_thread(int index, int portion, Vertices *vertices, mesh_msgs::MeshGe
 		vector<unsigned int> itself = vector<unsigned int>(1);
 		int partial=0;
 		for(int j=0;j<3;j++){ // for each vertex
-			
       if(vertices[cur.vertex_indices[j]].check){ // If the point have already been converted in the world reference space
 				// Retrieve the position of the point in the world reference system
 				temp1.setX(vertices[cur.vertex_indices[j]].transformed.x);
@@ -223,9 +227,9 @@ void server_thread(int index, int portion, Vertices *vertices, mesh_msgs::MeshGe
 				while(1){ // We enter a infinite loop to check the situation of the shared memory
 					if(mutex.try_lock()){ // if you can take control of the mutex	
 						// Store the point in a Vector3
-						temp2.setX(vertices[cur.vertex_indices[j]].transformed.x);
-						temp2.setY(vertices[cur.vertex_indices[j]].transformed.y);
-						temp2.setZ(vertices[cur.vertex_indices[j]].transformed.z);
+						temp2.setX(vertices[cur.vertex_indices[j]].transmitted.x);
+						temp2.setY(vertices[cur.vertex_indices[j]].transmitted.y);
+						temp2.setZ(vertices[cur.vertex_indices[j]].transmitted.z);
 						// Transform the point to the world reference fame
 						temp1=transform*temp2;
 						// Store the transformed point in the correct place
@@ -252,14 +256,39 @@ void server_thread(int index, int portion, Vertices *vertices, mesh_msgs::MeshGe
 				}				
 			}
 
-			//* Find the proximals
-				
+			//* Find the proximals (This algorithm allows for repetition of neighbor, we don't like this)
+				/*
 				for(int k=0;k<vertices[cur.vertex_indices[j]].index;k++){
-					output->neighbors[i].proximals[partial+k]=vertices[cur.vertex_indices[j]].neighbors[k];
+					
+					if(j>0){ // If we are not on the first vertex					
+						int l=0; // We start an index
+						while(l<partial){ // while the index is less than the number of neighbor that have been added
+							ROS_INFO("Ciao1 %d %d",l,partial);
+							if(int(output->neighbors[i].proximals[l])==int(vertices[cur.vertex_indices[j]].neighbors[k]+1)){ // if the neighbor has already be seen
+								ROS_INFO("We were on a break");
+								break; // exit the loop and go to the next neighbor
+							}else{
+								l++; // Add one to the counter
+								if(l>partial-1){
+									ROS_INFO("Ciao2 %d %d",l,partial);
+									output->neighbors[i].proximals[partial+1]=vertices[cur.vertex_indices[j]].neighbors[k]+1; // Add the new neighbor adding one so that later it will be easier to remove from the array all the zeros that do not represent vertices 
+									partial++;// add one to the partial
+								}
+							}
+						}
+					}else{ // On the first vertex all vertex proximals are neighbors
+						ROS_INFO("Ciao3 %d %d",k,j);
+						output->neighbors[i].proximals[k]=vertices[cur.vertex_indices[j]].neighbors[k]+1; 
+						partial=vertices[cur.vertex_indices[j]].index; // set the first interval to be checked to the number of neighbors
+					}
+				}
+				*/
+
+				for(int k=0;k<vertices[cur.vertex_indices[j]].index;k++){
+					output->neighbors[i].proximals[partial+k]=vertices[cur.vertex_indices[j]].neighbors[k]+1; // Add the new neighbor adding one so that later it will be easier to remove from the array all the zeros that do not represent vertices 
 				}
 				partial+=vertices[cur.vertex_indices[j]].index;
-				ROS_INFO("%d",partial);
-			sum+=temp1; // Update the sum
+			  sum+=temp1; // Update the sum of the vertices positions
 		}
     
 
