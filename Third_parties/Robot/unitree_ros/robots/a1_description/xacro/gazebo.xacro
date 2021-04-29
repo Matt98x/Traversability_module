@@ -373,12 +373,80 @@
 -->
 
 <gazebo>
--
+
 		<plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
 		  <alwaysOn>true</alwaysOn>
 		  <updateRate>50.0</updateRate>
 		  <bodyName>trunk</bodyName>
 		  <topicName>odom</topicName>
+		  <gaussianNoise>0.01</gaussianNoise>
+		  <frameName>world</frameName>
+		  <xyzOffsets>0 0 0</xyzOffsets>
+		  <rpyOffsets>0 0 0</rpyOffsets>
+               </plugin>
+   	</gazebo>
+
+
+
+
+<gazebo>
+
+		<plugin name="FL_foot" filename="libgazebo_ros_p3d.so">
+		  <alwaysOn>true</alwaysOn>
+		  <updateRate>50.0</updateRate>
+		  <bodyName>FL_foot</bodyName>
+		  <topicName>pos/FL_foot</topicName>
+		  <gaussianNoise>0.01</gaussianNoise>
+		  <frameName>world</frameName>
+		  <xyzOffsets>0 0 0</xyzOffsets>
+		  <rpyOffsets>0 0 0</rpyOffsets>
+               </plugin>
+   	</gazebo>
+
+
+
+
+<gazebo>
+
+		<plugin name="FR_foot" filename="libgazebo_ros_p3d.so">
+		  <alwaysOn>true</alwaysOn>
+		  <updateRate>50.0</updateRate>
+		  <bodyName>FR_foot</bodyName>
+		  <topicName>pos/FR_foot</topicName>
+		  <gaussianNoise>0.01</gaussianNoise>
+		  <frameName>world</frameName>
+		  <xyzOffsets>0 0 0</xyzOffsets>
+		  <rpyOffsets>0 0 0</rpyOffsets>
+               </plugin>
+   	</gazebo>
+
+
+
+
+<gazebo>
+
+		<plugin name="RL_foot" filename="libgazebo_ros_p3d.so">
+		  <alwaysOn>true</alwaysOn>
+		  <updateRate>50.0</updateRate>
+		  <bodyName>RL_foot</bodyName>
+		  <topicName>pos/RL_foot</topicName>
+		  <gaussianNoise>0.01</gaussianNoise>
+		  <frameName>world</frameName>
+		  <xyzOffsets>0 0 0</xyzOffsets>
+		  <rpyOffsets>0 0 0</rpyOffsets>
+               </plugin>
+   	</gazebo>
+
+
+
+
+<gazebo>
+
+		<plugin name="RR_foot" filename="libgazebo_ros_p3d.so">
+		  <alwaysOn>true</alwaysOn>
+		  <updateRate>50.0</updateRate>
+		  <bodyName>RR_foot</bodyName>
+		  <topicName>pos/RR_foot</topicName>
 		  <gaussianNoise>0.01</gaussianNoise>
 		  <frameName>world</frameName>
 		  <xyzOffsets>0 0 0</xyzOffsets>

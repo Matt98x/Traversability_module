@@ -14,8 +14,14 @@
   <!-- LAUNCHING THE FLOW REGULATOR -->
   <node name="flow" pkg="traversability_mesh_package" type="flow_regulator" launch-prefix="bash -c 'sleep 30; $0 $@' "/>
 
+	<!-- LAUNCHING THE ROBOT STATE -->
+  <node name="robot_state" pkg="traversability_mesh_package" type="robot_state" respawn="true" launch-prefix="bash -c 'sleep 35; $0 $@' "/> 
+
   <!-- LAUNCHING THE GEOMETRY FEATURES EXTRACTOR -->
-  <node name="geometry_extractor" pkg="traversability_mesh_package" type="geometry_extractor" launch-prefix="bash -c 'sleep 40; $0 $@' "/> 
+  <node name="geometry_extractor" pkg="traversability_mesh_package" type="geometry_extractor" respawn="true" launch-prefix="bash -c 'sleep 40; $0 $@' "/>  -->
+	 
+	<!-- LAUNCHING THE TRAVERSABILITY SCORE CALCULATOR -->
+   <node name="t_score" pkg="traversability_mesh_package" type="traversability_score" respawn="true" launch-prefix="bash -c 'sleep 40; $0 $@' "/>  
 
 
 </launch>

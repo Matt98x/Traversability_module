@@ -2,6 +2,7 @@
 #include <ros/ros.h> // roslibrary
 // Message types
 #include <mesh_msgs/MeshGeometryStamped.h>
+#include <geometry_msgs/Point.h>
 #include <sensor_msgs/Image.h>
 #include <nav_msgs/Odometry.h>
 #include <traversability_mesh_package/Base.h>
@@ -34,9 +35,13 @@ using namespace traversability_mesh_package;
 using namespace std;
 
 //* Variable declaration
-ros::Publisher point_pub;
-int n_server=3; // temporary solution to define the number of servers, later to be made in a parameter of the package
-boost::mutex mutex; // mutex to handle the access to the vertex structures array
+ros::Publisher output_pub;
+int n_server=1; // temporary solution to define the number of servers, later to be made in a parameter of the package
+
+boost::mutex mutex1;
+vector<Base> List(10);
+traversability_mesh_package::GeoFeature output; // the output is the mesh plus the geometrical features that will be extracted now
+traversability_mesh_package::GeoFeature reset;
 
 // Vertices class definition
 typedef struct Vertices {
@@ -45,13 +50,13 @@ typedef struct Vertices {
 	bool check = false; // check  to see whether it has been transformed
 	bool constructed = false; // initialize the constructed attribute to false 
 	int index=0;  // index on which the neighbor is written
-  vector<unsigned int> neighbors=vector<unsigned int>(10);  // number of neighbours initialized to one
+  vector<unsigned int> neighbors=vector<unsigned int>(20);  // number of neighbours initialized to one
 } Vertices;
 
 
 //* Thread functions declaration
 void master_thread(traversability_mesh_package::Base param); // one for each callback
-void server_thread(int index, int portion, Vertices *vertices, mesh_msgs::MeshGeometry mesh, tf::Transform transform, GeoFeature *output, tf::Vector3 sight_line); // multiple for each master thread
+void server_thread(int index, int portion, Vertices *vertices, tf::Transform transform, tf::Vector3 sight_line, boost::mutex *mutex); // multiple for each master thread
 
 //* Function to more accurately compute the acos of some dot product
 float acosine(float theta){
@@ -62,13 +67,14 @@ float acosine(float theta){
 	return M_PI/2 + (a*theta + b*theta*theta*theta) / (1 + c*theta*theta + d*theta*theta*theta*theta);
 }
 
-//* Callback function for the synchronizer
+//* Callback function for the subscriber
 void callback( const traversability_mesh_package::Base::ConstPtr& msg)
 {
 	traversability_mesh_package::Base input=*msg;
-
+	
   // spawn another thread
-  boost::thread thread_b(master_thread, input);
+	boost::thread thread_b(master_thread,input);
+
 }
 
 // Main definition
@@ -81,9 +87,11 @@ int main (int argc, char **argv)
   ros::NodeHandle n;
   
 	//* Subscribe to the coordinated data topic
-  ros::Subscriber point_sub = n.subscribe("base_coord", 1000, callback);
+  ros::Subscriber input_sub = n.subscribe("base_coord", 10, callback);
 	//* Advertize the coordinated data
-  point_pub = n.advertise<GeoFeature>("test_msg", 1000);
+  output_pub = n.advertise<GeoFeature>("/GeoFeatures", 1000);
+
+	
 	ros::spin();
 
   //exit
@@ -104,7 +112,7 @@ void master_thread(traversability_mesh_package::Base param){
 	T_wt.translation.z=param.odom.pose.pose.position.z;
 	// retrieve the quaternion of the trunk reference system w.r.t. the world reference system
   T_wt.rotation=param.odom.pose.pose.orientation;
-  
+
 	// Transformation from trunk to LiDAR
   /* ..Can be hardcoded or passed as a parameter(in the final version it will be like this), the most important feature is that is constant.. */
 	geometry_msgs::Transform T_tl;
@@ -123,7 +131,7 @@ void master_thread(traversability_mesh_package::Base param){
   tf::transformMsgToTF(T_wt,T_w); // Transform the world to trunk in a transform
 	tf::transformMsgToTF(T_tl,T_t); // Transform the trunk to LiDAR in a transform
 	res.mult(T_w,T_t); // Multiply the two transforms and store them in the resulting final transform (This will be used to compute the lidar point position with respect to the world)
-	
+
 	// We want to use the trunk to world transformation to generate the observation direction of the robot
 	// we set the translation to 0
   T_wt.translation.x=0;
@@ -131,23 +139,43 @@ void master_thread(traversability_mesh_package::Base param){
 	T_wt.translation.z=0;
 	// Generate the new transformation matrix
 	tf::transformMsgToTF(T_wt,T_w); // Transform the world to trunk in a transform
-  tf::Vector3 temp; // Temporary location where we can store the x-versor and perform calculations
-	temp=T_w*temp; // find the x direction of the robot with respect to the world reference frame
 
+  tf::Vector3 temp; // Temporary location where we can store the x-versor and perform calculations
+	temp.setX(1);
+	temp=T_w.inverse()*temp; // find the x direction of the robot with respect to the world reference frame
+	temp.normalize();
 	//* Initialize the vertices array and give compute all faces neighboring to each vertex
   
+//* Initialize the output
 	//We declare same variables to make the computation easier
-	mesh_msgs::MeshGeometry mesh = param.mesh.mesh_geometry; // extraction of the mesh
-	int n_vertices=mesh.vertices.size(); //number of vertices
-	int n_faces = mesh.faces.size(); // number of faces
+
+	int n_vertices = param.mesh.mesh_geometry.vertices.size(); //number of vertices
+	int n_faces = param.mesh.mesh_geometry.faces.size(); // number of faces
   int p_index; // index of the vertex we are considering at each instant
 	Vertices vertices[n_vertices]; // Initialization of the vertices array
+
+
+  // Generates arrays of appropriate dimension
+	
+	output.header=param.mesh.header;
+	output.mesh=param.mesh;
+  output.areas=vector<double>(n_faces);;
+	output.slopes=vector<double>(n_faces);
+	output.normals=vector<geometry_msgs::Point>(n_faces);
+	output.baricenters=vector<geometry_msgs::Point>(n_faces);
+  output.neighbors=vector<traversability_mesh_package::Proximals>(n_faces);
+	// sight direction (corrisponding to the robot x direction in the world reference frame)
+	output.sight_dir.x=temp.getX();
+	output.sight_dir.y=temp.getY();
+	output.sight_dir.z=temp.getZ(); 
+
+
  	// We perform the loop to find all neighboring faces of each vertex
   for(int i=0; i<n_faces;i++){ // for all faces
 		for(int j=0;j<3;j++){ // for all vertices of a face
-			p_index = mesh.faces[i].vertex_indices[j]; // index assignment
+			p_index = param.mesh.mesh_geometry.faces.at(i).vertex_indices[j]; // index assignment
  			if(!vertices[p_index].constructed){ // if the  vertex have not been constructed yet
-				vertices[p_index].transmitted=mesh.vertices[p_index]; // input the vertex coordinates received from the previous node
+				vertices[p_index].transmitted=output.mesh.mesh_geometry.vertices[p_index]; // input the vertex coordinates received from the previous node
 				vertices[p_index].constructed=true; // Impose that the vertex has been initialized 
 				vertices[p_index].neighbors[vertices[p_index].index]=i; // say that the first neighboring face is the one at which the face has been initialized
 				vertices[p_index].index++; // Increment the writing index
@@ -158,146 +186,105 @@ void master_thread(traversability_mesh_package::Base param){
 		}
 	}
   
-
-  
-	//* Initialize the output
-	traversability_mesh_package::GeoFeature output; // the output is the mesh plus the geometrical features that will be extracted now
-	output.header = param.odom.header; // Set the header as the one at the input
-  // Generates arrays of appropriate dimension
-	output.mesh.mesh_geometry.vertices=vector<geometry_msgs::Point>(n_faces);
-	output.mesh.mesh_geometry.faces=vector<mesh_msgs::TriangleIndices>(n_faces);
-	output.areas=vector<double>(n_faces);;
-	output.slopes=vector<double>(n_faces);
-	output.normals=vector<geometry_msgs::Point>(n_faces);
-	output.baricenters=vector<geometry_msgs::Point>(n_faces);
-  output.neighbors=vector<traversability_mesh_package::Proximals>(n_faces);
-	// sight direction (corrisponding to the robot x direction in the world reference frame)
-	output.sight_dir.x=temp.getX();
-	output.sight_dir.y=temp.getY();
-	output.sight_dir.z=temp.getZ(); 
-	
   //* Divide the faces among the number of servers
-  
+	boost::mutex mutex;
+	boost::thread s_t[n_server];
   // compute how many faces should go to each server
 	unsigned int portion = n_faces/n_server; // how many faces the server should handle
-  
-  // Initialize the servers
-  boost::thread s_t[n_server];
-  for(int i=0;i<n_server;i++){
-		s_t[i]= boost::thread(boost::bind(server_thread,i,portion,vertices,mesh,res,&output,temp));
-  }
-  // Wait for the servers to finish
-	for(int i=0;i<n_server;i++){
-		s_t[i].join();
-  }
+  for(int i=0; i<n_server;i++)
+			s_t[i]=boost::thread(server_thread,i,portion,vertices,res,temp, &mutex);
+
+	for(int  i=0;i<n_server;i++)
+			s_t[i].join();
+  GeoFeature message;
+
 
   //* Send the feature message 
-  point_pub.publish(output);
+	output_pub.publish(output);
+
 }
 
-void server_thread(int index, int portion, Vertices *vertices, mesh_msgs::MeshGeometry mesh, tf::Transform transform, GeoFeature *output, tf::Vector3 sight_line){
+void server_thread(int index, int portion, Vertices *vertices, tf::Transform transform, tf::Vector3 sight_line, boost::mutex *mutex){
+
 	//Variables declaration
 	tf::Vector3 sum; // Variable to store the sum from which we can obtain the baricenter dividing by 3
 	tf::Vector3 temp1; // Temporary location where we can store points and perform calculations
 	tf::Vector3 temp2; // Temporary location where we can store points and perform calculation
   int last=(index+1)*portion; // The last index the server should consider is the one immidiately before the one at which the next server start
 	int a=0;
-  if((index+2)*portion>mesh.faces.size()){ // If there are no other servers
+  if((index+2)*portion>output.mesh.mesh_geometry.faces.size()){ // If there are no other servers
 		a=last;
-		last=mesh.faces.size(); // The last index is the one of the last server
+		last=output.mesh.mesh_geometry.faces.size(); // The last index is the one of the last server
   }
+	vector<geometry_msgs::Point> temporary=vector<geometry_msgs::Point>(output.mesh.mesh_geometry.vertices.size());
+	geometry_msgs::Point temporary1;
+
   //* Loop over all the indices given to the server by the master  
   for (int i=index*portion;i<last;i++){
-		output->neighbors[i].proximals=vector<unsigned int>(20);
+	
+		output.neighbors[i].proximals=vector<unsigned int>(20);
     //* Compute the real position of the vertices
-		mesh_msgs::TriangleIndices cur = mesh.faces[i]; // store the current face
+		mesh_msgs::TriangleIndices cur = output.mesh.mesh_geometry.faces[i]; // store the current face
 		sum*=0;
 		vector<unsigned int> neighbors = vector<unsigned int>(100);
     vector<unsigned int> temps;
 		vector<unsigned int> itself = vector<unsigned int>(1);
 		int partial=0;
+		
 		for(int j=0;j<3;j++){ // for each vertex
+
       if(vertices[cur.vertex_indices[j]].check){ // If the point have already been converted in the world reference space
 				// Retrieve the position of the point in the world reference system
 				temp1.setX(vertices[cur.vertex_indices[j]].transformed.x);
 				temp1.setY(vertices[cur.vertex_indices[j]].transformed.y);
 				temp1.setZ(vertices[cur.vertex_indices[j]].transformed.z);
-				output->mesh.mesh_geometry.faces[i].vertex_indices[j]=j;
 			}else{ // Otherwise
+			
 				while(1){ // We enter a infinite loop to check the situation of the shared memory
-					if(mutex.try_lock()){ // if you can take control of the mutex	
+					if(mutex->try_lock()){ // if you can take control of the mutex	
 						// Store the point in a Vector3
 						temp2.setX(vertices[cur.vertex_indices[j]].transmitted.x);
 						temp2.setY(vertices[cur.vertex_indices[j]].transmitted.y);
 						temp2.setZ(vertices[cur.vertex_indices[j]].transmitted.z);
 						// Transform the point to the world reference fame
 						temp1=transform*temp2;
-						// Store the transformed point in the correct place
+						// Store the transformed point in the correct place 
 						vertices[cur.vertex_indices[j]].transformed.x=temp1.getX();
 						vertices[cur.vertex_indices[j]].transformed.y=temp1.getY();
 						vertices[cur.vertex_indices[j]].transformed.z=temp1.getZ();
 						// Save the new point in the output
-						output->mesh.mesh_geometry.vertices[i].x=temp1.getX();
-						output->mesh.mesh_geometry.vertices[i].y=temp1.getY();
-						output->mesh.mesh_geometry.vertices[i].z=temp1.getZ();
-						output->mesh.mesh_geometry.faces[i].vertex_indices[j]=j;
+						tf::pointTFToMsg (temp1,output.mesh.mesh_geometry.vertices[cur.vertex_indices[j]]);
+
 						vertices[cur.vertex_indices[j]].check=true; // Set the transformation check to true
-						mutex.unlock(); // Unlock the mutex so that other can modify other points if they need
+						mutex->unlock(); // Unlock the mutex so that other can modify other points if they need
 						break;
 					}else{ // try to see if the thread controlling the mutex is changing the vertex you are interested in
 						if(vertices[cur.vertex_indices[j]].check){ // if it has modified the vertex you are interested in, you just need to read the transformed point 
 							temp1.setX(vertices[cur.vertex_indices[j]].transformed.x);
 							temp1.setY(vertices[cur.vertex_indices[j]].transformed.y);
 							temp1.setZ(vertices[cur.vertex_indices[j]].transformed.z);
-							output->mesh.mesh_geometry.faces[i].vertex_indices[j]=j;
 							break;
 						}
 					}
 				}				
 			}
-
-			//* Find the proximals (This algorithm allows for repetition of neighbor, we don't like this)
-				/*
-				for(int k=0;k<vertices[cur.vertex_indices[j]].index;k++){
-					
-					if(j>0){ // If we are not on the first vertex					
-						int l=0; // We start an index
-						while(l<partial){ // while the index is less than the number of neighbor that have been added
-							ROS_INFO("Ciao1 %d %d",l,partial);
-							if(int(output->neighbors[i].proximals[l])==int(vertices[cur.vertex_indices[j]].neighbors[k]+1)){ // if the neighbor has already be seen
-								ROS_INFO("We were on a break");
-								break; // exit the loop and go to the next neighbor
-							}else{
-								l++; // Add one to the counter
-								if(l>partial-1){
-									ROS_INFO("Ciao2 %d %d",l,partial);
-									output->neighbors[i].proximals[partial+1]=vertices[cur.vertex_indices[j]].neighbors[k]+1; // Add the new neighbor adding one so that later it will be easier to remove from the array all the zeros that do not represent vertices 
-									partial++;// add one to the partial
-								}
-							}
-						}
-					}else{ // On the first vertex all vertex proximals are neighbors
-						ROS_INFO("Ciao3 %d %d",k,j);
-						output->neighbors[i].proximals[k]=vertices[cur.vertex_indices[j]].neighbors[k]+1; 
-						partial=vertices[cur.vertex_indices[j]].index; // set the first interval to be checked to the number of neighbors
-					}
-				}
-				*/
-
-				for(int k=0;k<vertices[cur.vertex_indices[j]].index;k++){
-					output->neighbors[i].proximals[partial+k]=vertices[cur.vertex_indices[j]].neighbors[k]+1; // Add the new neighbor adding one so that later it will be easier to remove from the array all the zeros that do not represent vertices 
-				}
-				partial+=vertices[cur.vertex_indices[j]].index;
+    
+        
+				for(unsigned int x : vertices[cur.vertex_indices[j]].neighbors) // if you want to add 10 to each element
+    					x ++;
+				
+				output.neighbors[i].proximals.insert(output.neighbors[i].proximals.end(), vertices[cur.vertex_indices[j]].neighbors.begin(), vertices[cur.vertex_indices[j]].neighbors.end());
+				partial+=vertices[cur.vertex_indices[j]].index; 
 			  sum+=temp1; // Update the sum of the vertices positions
 		}
-    
+
 
 	  //* Find the baricenter in the world reference frame
 		sum/=3; // Divide by 3 to obtain the avarage
-		output->baricenters[i].x=sum.getX();
-		output->baricenters[i].y=sum.getY();
-		output->baricenters[i].z=sum.getZ();
-		
+		output.baricenters[i].x=sum.getX();
+		output.baricenters[i].y=sum.getY();
+		output.baricenters[i].z=sum.getZ();
+
 		//* Compute two vectors to compute all the other features of the face (generating taking the vertices 1 and 2 and subtracting the vertex at index 0)
 		temp1.setX(vertices[cur.vertex_indices[1]].transformed.x-vertices[cur.vertex_indices[0]].transformed.x);
 		temp1.setY(vertices[cur.vertex_indices[1]].transformed.y-vertices[cur.vertex_indices[0]].transformed.y);
@@ -305,8 +292,9 @@ void server_thread(int index, int portion, Vertices *vertices, mesh_msgs::MeshGe
 		temp2.setX(vertices[cur.vertex_indices[2]].transformed.x-vertices[cur.vertex_indices[0]].transformed.x);
 		temp2.setY(vertices[cur.vertex_indices[2]].transformed.y-vertices[cur.vertex_indices[0]].transformed.y);
 		temp2.setZ(vertices[cur.vertex_indices[2]].transformed.z-vertices[cur.vertex_indices[0]].transformed.z);
-		
+
 		//* Compute the orientation vector of the element
+
 		sum=temp1.cross(temp2); // the orientation vector will be the cross product between the two sides
 		if(sum.dot(sight_line)>0) // we want to correct the orientation since from the mesh reconstruction all mesh elements normals should point to the robot
 			sum*=-1; // With this the dot product is always negative, which mean that the normal is pointing in the direction of the robot
@@ -314,17 +302,21 @@ void server_thread(int index, int portion, Vertices *vertices, mesh_msgs::MeshGe
 		float L=sum.length(); // Here we find the length of the orientation vector
 		temp1=sum/L; // With this we normalize the vector making temp1 the versor of sum
 		// Input the normals in the output
-    output->normals[i].x=temp1.getX();
-		output->normals[i].y=temp1.getY();
-		output->normals[i].z=temp1.getZ();
+    output.normals[i].x=temp1.getX();
+		output.normals[i].y=temp1.getY();
+		output.normals[i].z=temp1.getZ();
     //* Compute the slope with the modified arccos algorithm
     float alength =temp1.getZ(); // with this we find the dot product of the orientation with the vertical axis; From this we can compute the slope of the mesh element
-		float slope = acosine(alength); // compute the slope as the arcosine of the the dot product
-		output->slopes[i]=slope; // fill the slope field
+		if(!isnan(alength)){	 // If the normal is defined	
+			float slope = acosine(alength); // compute the slope as the arcosine of the the dot product
+			output.slopes[i]=slope; // fill the slope field
+		}else{
+			output.slopes[i]=M_PI; // we put the maximum possible slope
+		}
     //* Compute the area of the element
 		float area = L/2; // The area of the mesh element is simply the normal divided by 2
-		output->areas[i]=area; // fill the area field
-
+		output.areas[i]=area; // fill the area field
+		
   } 
 }
 

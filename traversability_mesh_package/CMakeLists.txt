@@ -30,6 +30,7 @@ find_package(OpenCV REQUIRED)
 find_package(PCL 1.2 REQUIRED)
 
 include_directories(${PCL_INCLUDE_DIRS})
+include_directories(include)
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 add_definitions(${LVR2_DEFINITIONS} ${OpenCV_DEFINITIONS})
@@ -53,6 +54,7 @@ add_message_files(
   Base.msg
 	GeoFeature.msg
 	Proximals.msg
+	RobotState.msg
 )
 
 generate_messages(
@@ -116,6 +118,11 @@ include_directories(
   ${lvr_ros_INCLUDE_DIRS}
 )
 
+# Declare a C++ library
+add_library(${PROJECT_NAME}
+    src/geometry_score.cpp 
+)
+
 ## EXECUTABLES
 
 ## cloud handler executable
@@ -149,6 +156,25 @@ target_link_libraries(geometry_extractor
   ${MPI_CXX_LIBRARIES}
 )
 add_dependencies(geometry_extractor ${catkin_EXPORTED_TARGETS})
+
+## Traversability computer executable
+add_executable(traversability_score src/traversability_score.cpp)
+target_link_libraries(traversability_score
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${MPI_CXX_LIBRARIES}
+	${PROJECT_NAME}
+)
+add_dependencies(traversability_score ${catkin_EXPORTED_TARGETS})
+
+## Robot State publisher
+add_executable(robot_state src/robot_state.cpp)
+target_link_libraries(robot_state
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${MPI_CXX_LIBRARIES}
+)
+add_dependencies(robot_state ${catkin_EXPORTED_TARGETS})
 
 add_executable(rmdt src/rmdt.cpp)
 target_link_libraries(rmdt
