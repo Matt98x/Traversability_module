@@ -10,5 +10,5 @@ echo >> ~/Desktop/catkin_ws/src/Traversability_module/Third_parties/Mesh/lvr_ros
 sed -i '$ d' ~/Desktop/catkin_ws/src/Traversability_module/Third_parties/Mesh/lvr_ros/src/reconstruction.cpp
 echo >> ~/Desktop/catkin_ws/src/Traversability_module/Third_parties/Mesh/lvr_ros/src/conversions.cpp
 sed -i '$ d' ~/Desktop/catkin_ws/src/Traversability_module/Third_parties/Mesh/lvr_ros/src/conversions.cpp
-cd ~/Desktop/catkin_ws 
+cd ~/Desktop/catkin_ws
 catkin_make_isolated
