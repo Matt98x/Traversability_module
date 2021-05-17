@@ -5,7 +5,7 @@
 #include <geometry_msgs/Point.h>
 #include <sensor_msgs/Image.h>
 #include <nav_msgs/Odometry.h>
-#include <traversability_mesh_package/Base.h>
+#include <traversability_mesh_package/Data.h>
 #include <traversability_mesh_package/GeoFeature.h>
 // Thread related functions
 #include <std_msgs/Empty.h>
@@ -39,7 +39,7 @@ ros::Publisher output_pub;
 int n_server=1; // temporary solution to define the number of servers, later to be made in a parameter of the package
 
 boost::mutex mutex1;
-vector<Base> List(10);
+vector<Data> List(10);
 traversability_mesh_package::GeoFeature output; // the output is the mesh plus the geometrical features that will be extracted now
 traversability_mesh_package::GeoFeature reset;
 
@@ -55,7 +55,7 @@ typedef struct Vertices {
 
 
 //* Thread functions declaration
-void master_thread(traversability_mesh_package::Base param); // one for each callback
+void master_thread(traversability_mesh_package::Data param); // one for each callback
 void server_thread(int index, int portion, Vertices *vertices, tf::Transform transform, tf::Vector3 sight_line, boost::mutex *mutex); // multiple for each master thread
 
 //* Function to more accurately compute the acos of some dot product
@@ -68,9 +68,9 @@ float acosine(float theta){
 }
 
 //* Callback function for the subscriber
-void callback( const traversability_mesh_package::Base::ConstPtr& msg)
+void callback( const traversability_mesh_package::Data::ConstPtr& msg)
 {
-	traversability_mesh_package::Base input=*msg;
+	traversability_mesh_package::Data input=*msg;
 	
   // spawn another thread
 	boost::thread thread_b(master_thread,input);
@@ -99,7 +99,7 @@ int main (int argc, char **argv)
 }
 
 //* Thread functions definition
-void master_thread(traversability_mesh_package::Base param){
+void master_thread(traversability_mesh_package::Data param){
   
 
   //* Retrieve the transformation matrix elements 

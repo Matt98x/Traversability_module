@@ -11,7 +11,7 @@
 
   <node pkg="unitree_controller" type="unitree_transform" name="unitree_transform" respawn="true" output="screen" launch-prefix="bash -c 'sleep 20; $0 $@' "/> 
   
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find unitree_gazebo)/rviz/interface.rviz" launch-prefix="bash -c 'sleep 30; $0 $@' "/>
+  
 
   <!-- <node name="commander" pkg="unitree_controller" type="unitree_move_kinetic" output="screen" launch-prefix =" bash -c 'sleep 40; $0 $@'"/> -->
 

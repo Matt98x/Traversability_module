@@ -35,6 +35,7 @@ void callback(const sensor_msgs::ImageConstPtr& msg1,const nav_msgs::Odometry::C
   base.odom=*msg2;
   base.image=*msg1;
   base.mesh=*msg3;
+	base.points=*msg4;
   base_pub.publish(base);
 }
 
@@ -48,7 +49,7 @@ int main (int argc, char **argv)
   ros::NodeHandle n;
 
   //* Advertize the coordinated data
-	base_pub = n.advertise<Base>("base_coord", 1000);
+	base_pub = n.advertise<Data>("base_coord", 1000);
 
 	//* Define the  synchronization policy for the input topics: ApproximateTime is used to have the least possible difference between corresponding timestamps while not imposing a perfect identity which would gravely affect the transmission rate
   message_filters::Subscriber<Image> image_sub(n, "/camera1/color/image_raw", 1);
