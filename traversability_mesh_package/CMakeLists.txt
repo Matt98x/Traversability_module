@@ -52,6 +52,7 @@ add_definitions(${LVR2_DEFINITIONS} ${OpenCV_DEFINITIONS})
 add_message_files(
   FILES
   Base.msg
+	Data.msg
 	GeoFeature.msg
 	Proximals.msg
 	RobotState.msg

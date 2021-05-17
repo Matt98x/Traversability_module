@@ -3,8 +3,10 @@
 // message types
 #include <mesh_msgs/MeshGeometryStamped.h>
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <nav_msgs/Odometry.h>
 #include <traversability_mesh_package/Base.h>
+#include <traversability_mesh_package/Data.h>
 // message filters libraries
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
@@ -17,17 +19,17 @@ using namespace mesh_msgs;
 using namespace nav_msgs;
 using namespace message_filters;
 using namespace traversability_mesh_package;
-typedef sync_policies::ApproximateTime<Image, Odometry, MeshGeometryStamped> MySyncPolicy;
+typedef sync_policies::ApproximateTime<Image, Odometry, MeshGeometryStamped, PointCloud2> MySyncPolicy;
 
 //*Variable definition
 ros::Publisher base_pub;
 sensor_msgs::Image image;
 nav_msgs::Odometry odom;
 mesh_msgs::MeshGeometryStamped mesh; // global Point cloud variable
-traversability_mesh_package::Base base;
+traversability_mesh_package::Data base;
 
 //* Callback function for the synchronizer
-void callback(const sensor_msgs::ImageConstPtr& msg1,const nav_msgs::Odometry::ConstPtr& msg2, const mesh_msgs::MeshGeometryStamped::ConstPtr& msg3)
+void callback(const sensor_msgs::ImageConstPtr& msg1,const nav_msgs::Odometry::ConstPtr& msg2, const mesh_msgs::MeshGeometryStamped::ConstPtr& msg3,const sensor_msgs::PointCloud2::ConstPtr& msg4)
 {
 	//* Publish as fast as you can the coordinated messages
   base.odom=*msg2;
@@ -52,8 +54,9 @@ int main (int argc, char **argv)
   message_filters::Subscriber<Image> image_sub(n, "/camera1/color/image_raw", 1);
 	message_filters::Subscriber<Odometry> odom_sub(n, "odom", 1);
   message_filters::Subscriber<MeshGeometryStamped> mesh_sub(n, "mesh_geometry", 1);
-  Synchronizer<MySyncPolicy> sync(MySyncPolicy(50), image_sub, odom_sub, mesh_sub);
-  sync.registerCallback(boost::bind(&callback, _1, _2,_3));
+  message_filters::Subscriber<PointCloud2> point_sub(n, "checkpoint", 1);
+  Synchronizer<MySyncPolicy> sync(MySyncPolicy(50), image_sub, odom_sub, mesh_sub, point_sub);
+  sync.registerCallback(boost::bind(&callback, _1, _2,_3,_4));
 
 	ros::spin();
 
