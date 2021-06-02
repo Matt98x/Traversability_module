@@ -15,6 +15,7 @@
 // Tf libraries
 #include <tf/tf.h>
 #include <tf/transform_datatypes.h>
+#include <tf2_ros/transform_listener.h>
 // Vector related libraries
 #include <iostream>
 #include <vector>
@@ -25,6 +26,17 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 // Math
 #include <math.h>
+#include <list>
+#include <bits/stdc++.h>
+// Opencv libraries
+#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/image_encodings.h>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <cstdlib>
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
+
 
 
 //* Setting namespaces and typedef to symplify the typing
@@ -36,6 +48,8 @@ using namespace std;
 
 //* Variable declaration
 ros::Publisher output_pub;
+//tf2_ros::Buffer tfBuffer;
+//tf2_ros::TransformListener tfListener(tfBuffer);
 int n_server=1; // temporary solution to define the number of servers, later to be made in a parameter of the package
 
 boost::mutex mutex1;
@@ -47,106 +61,264 @@ traversability_mesh_package::GeoFeature reset;
 typedef struct Vertices {
   geometry_msgs::Point transmitted; // original position with respect to the lidar
   geometry_msgs::Point transformed; // transformed position with respect to the world reference frame
+  
 	bool check = false; // check  to see whether it has been transformed
 	bool constructed = false; // initialize the constructed attribute to false 
 	int index=0;  // index on which the neighbor is written
   vector<unsigned int> neighbors=vector<unsigned int>(20);  // number of neighbours initialized to one
 } Vertices;
 
+// Color class definition
+struct RGB {
+    uchar blue;
+    uchar green;
+    uchar red;  };
+
+// Function to obtain the pixel indices of a face
+int addPixels(list<int>& pixels,int* pixely,int* pixelx,int indtop,int indbottom, float m3, int temp, int ind3,int width, int k){
+	int number=-(pixely[indtop]-pixely[indbottom]); // number of rows occupied by the portion of mesh element in the image
+	int x_min,x_max; // minimum and maximum x-coordinates at a row y
+	float mi; // slope of the lines connecting the top vertex of the portion to the bottom
+	if(number==0){ // If the number is zero
+		return 0; // skip the portion
+	}
+	// ROS_INFO("%d %d %d %d %d %d",pixelx[indtop],pixely[indtop],pixelx[indbottom],pixely[indbottom],pixelx[3-indtop-indbottom],pixely[3-indtop-indbottom]);
+	for(int i=0;i<number;i++){ // Going over all rows er find the maximum and minimum x values of the portionn at that row
+		if(abs(pixelx[indtop]-pixelx[indbottom])>0){ // if the line is not vertical
+			mi=float(pixely[indtop]-pixely[indbottom])/float(pixelx[indtop]-pixelx[indbottom]); // compute the slope of the main side
+			x_min=(i-number)/mi+pixelx[indbottom]; // compute the limit on the main side
+		}else{ // otherwise
+			x_min=pixelx[indtop];  // compute the limit on the main side
+		}
+		 
+		
+		if(temp==1){ // the line is vertical
+			x_max=m3; // comput the limit on the other side
+		}else{ // otherwise
+			x_max=(i-number)/m3+pixelx[ind3];; // compute the other border
+		}
+		// If the left and right extreme are switched, we switch them back
+		int tempreorder;
+		if(x_min>x_max){
+			tempreorder=x_min;
+			x_min=x_max;
+			x_max=tempreorder;
+		}
+		//ROS_INFO("%d %d",x_max,x_min); //debugging code
+		// We insert all the pixels between the two extremes giving their code 
+		for(int j=x_min;j<x_max+1;j++){
+			int index=(pixely[indtop]+i)*width+j; // find the index of the pixel in the row
+			if(k==0){
+				pixels.front()=index; // for the fist elemet simply give the correct value
+				k=1; // signal that this is not the first element anymore 
+			}else{
+				pixels.insert(pixels.end(),index); // add the index to the list of pixels related to the 
+			}
+		}
+		
+		
+	}
+	//ROS_INFO("\n"); // debugging code
+	//ROS_INFO("%d\n",number);
+	return 1;
+}
 
 //* Thread functions declaration
-void master_thread(traversability_mesh_package::Data param); // one for each callback
-void server_thread(int index, int portion, Vertices *vertices, tf::Transform transform, tf::Vector3 sight_line, boost::mutex *mutex); // multiple for each master thread
+void server_thread(int index, int portion, Vertices *vertices,traversability_mesh_package::Data param,cv::Mat image,float f, tf::Transform transform1,tf::Transform transform2, boost::mutex *mutex){
 
-//* Function to more accurately compute the acos of some dot product
-float acosine(float theta){
-	double a = -0.939115566365855;
-	double b =  0.9217841528914573;
-	double c = -1.2845906244690837;
-	double d =  0.295624144969963174;
-	return M_PI/2 + (a*theta + b*theta*theta*theta) / (1 + c*theta*theta + d*theta*theta*theta*theta);
+	//Variables declaration
+	tf::Vector3 sum; // Variable to store the sum from which we can obtain the baricenter dividing by 3
+	tf::Vector3 temp1; // Temporary location where we can store points and perform calculations
+	tf::Vector3 temp2; // Temporary location where we can store points and perform calculation
+  int last=(index+1)*portion; // The last index the server should consider is the one immidiately before the one at which the next server start
+	int a=0;
+  if((index+2)*portion>output.mesh.mesh_geometry.faces.size()){ // If there are no other servers
+		a=last;
+		last=output.mesh.mesh_geometry.faces.size(); // The last index is the one of the last server
+  }
+	vector<geometry_msgs::Point> temporary=vector<geometry_msgs::Point>(output.mesh.mesh_geometry.vertices.size());
+	geometry_msgs::Point temporary1;
+
+	float quotient1,quotient2,quotient3,limit1,limit2,limit3;
+	float min_,max_;
+	int indmin=0;
+	int indmax=0;
+	float meanx=0.0;
+	float meany=0.0;
+	int indmed=0;
+  //* Loop over all the indices given to the server by the master  
+    for (int i=index*portion;i<last;i++){
+		float x_array[3]; // Array to contain the x-image-coordinate for the face
+		float y_array[3]; // Array to contain the y-image-coordinate for the face
+		int xarray[3]; // Array to contain the x-pixel-coordinate for the face
+		int yarray[3]; // Array to contain the y-pixel-coordinate for the face
+		output.neighbors[i].proximals=vector<unsigned int>(20);
+    	//* Compute the real position of the vertices
+		mesh_msgs::TriangleIndices cur = output.mesh.mesh_geometry.faces[i]; // store the current face
+		int partial=0;
+		// Vertices transformation
+		for(int j=0;j<3;j++){ // for each vertex
+
+    		if(vertices[cur.vertex_indices[j]].check){ // If the point have already been converted in the world reference space
+				// Retrieve the position of the point in the world reference system
+				temp1.setX(vertices[cur.vertex_indices[j]].transformed.x);
+				temp1.setY(vertices[cur.vertex_indices[j]].transformed.y);
+				temp1.setZ(vertices[cur.vertex_indices[j]].transformed.z);
+			}else{ // Otherwise
+			
+				while(1){ // We enter a infinite loop to check the situation of the shared memory
+					if(mutex->try_lock()){ // if you can take control of the mutex	
+						// Store the point in a Vector3
+						temp2.setX(vertices[cur.vertex_indices[j]].transmitted.x);
+						temp2.setY(vertices[cur.vertex_indices[j]].transmitted.y);
+						temp2.setZ(vertices[cur.vertex_indices[j]].transmitted.z);
+						// Transform the point to the camera reference fame
+						temp1=transform2*temp2;
+						// Save the results into temporary variables
+						float temp01,temp02,temp03;
+						temp01=temp1.getX();
+						temp02=temp1.getY();
+						temp03=temp1.getZ();
+						// Switch the coordinates to conform to the camera frame convention
+						temp1.setX(temp02);
+						temp1.setY(temp03);
+						temp1.setZ(temp01);
+						// Transform the point into the image reference frame (this put the origin in the top left corner)
+						temp1=transform1*temp1;
+						//DEBUGGING CODE
+						//x_array[j]=param.image.width-temp1.getX()/(temp1.getZ());
+						//y_array[j]=param.image.height-temp1.getY()/(temp1.getZ());
+						//ROS_INFO("%f %f %f %f %f",x_array[j],y_array[j],temp01,temp02,temp03);
+						// Store the transformed point in the correct place 
+						vertices[cur.vertex_indices[j]].transformed.x=temp1.getX();
+						vertices[cur.vertex_indices[j]].transformed.y=temp1.getY();
+						vertices[cur.vertex_indices[j]].transformed.z=temp1.getZ();
+						vertices[cur.vertex_indices[j]].check=true; // Set the transformation check to true
+						mutex->unlock(); // Unlock the mutex so that other can modify other points if they need
+						//ROS_INFO("%f %f %f",temp1.getX(),temp1.getY(),temp1.getZ());
+						break;
+					}else{ // try to see if the thread controlling the mutex is changing the vertex you are interested in
+						if(vertices[cur.vertex_indices[j]].check){ // if it has modified the vertex you are interested in, you just need to read the transformed point 
+							temp1.setX(vertices[cur.vertex_indices[j]].transformed.x);
+							temp1.setY(vertices[cur.vertex_indices[j]].transformed.y);
+							temp1.setZ(vertices[cur.vertex_indices[j]].transformed.z);
+							break;
+						}
+					}
+				}				
+			}
+			// Convert the coordinates in pixels coordinate
+			 x_array[j]=param.image.width-temp1.getX()/(temp1.getZ());
+			 y_array[j]=param.image.height-temp1.getY()/(temp1.getZ());
+		}
+
+		// Operation over the faces
+		
+		// First we need to sort the array elements from top to bottom and from left to right and the coordinates need to be rounded to fit with a pixel
+		// Define some variables for the calculations
+		
+		meanx=0.0;
+		meany=0.0;
+		// Loop over the three elements to find the minimum and the maximum over the y(in case of draw select order from left to right)
+		float order[3]={y_array[0]*param.image.width+x_array[0],y_array[1]*param.image.width+x_array[1],y_array[2]*param.image.width+x_array[2]};
+		for(int k=0;k<3;k++){
+			if(min_<order[k]){
+				min_=order[k];
+				indmin=k;
+			}
+			if(max_>order[k]){
+				max_=order[k];
+				indmax=k;
+			}
+			meanx+=x_array[k];
+			meany+=y_array[k];
+		}
+		meanx/=3;
+		meany/=3;
+		// Now indmin and indmax should correspond respectively to the points one and three
+		// now we want to find the index for point two
+		//ROS_INFO("%d %d",indmin, indmax);
+		for(int k=0;k<3;k++){
+			indmed=3-indmin-indmax;
+			
+			//	Round the pixel indices to correspond to
+			if(x_array[k]<meanx){
+				xarray[k]=floor(x_array[k]);
+			}else{
+				xarray[k]=ceil(x_array[k]);
+			}
+
+			if(y_array[k]<meany){
+				yarray[k]=floor(y_array[k]);
+			}else{
+				yarray[k]=ceil(y_array[k]);
+			}
+		}
+		float m3=0;
+		int temp=0;
+		if(xarray[indmax]-xarray[indmin]==0){
+			m3= x_array[indmax];
+			temp=1;
+		}else{
+			m3=float(yarray[indmax]-yarray[indmin])/float(xarray[indmax]-xarray[indmin]); // find the 
+			temp=0;
+		}
+		// Compute the pixels inside the face
+		list<int> pixels=list<int>(1); // initialize the pixel list
+		int shift=addPixels(pixels,yarray,xarray,indmax,indmed,m3,temp,indmin,param.image.width,0); // compute the pixels for the upper triangle
+		shift=addPixels(pixels,yarray,xarray,indmed,indmin,m3,temp,indmin,param.image.width,1); // compute the pixels for the lower triangle
+		//ROS_INFO("%d\n",pixels.size());
+
+		// Extract the rgb information for each pixel 
+		list<RGB> colors=list<RGB>(0); // initialization of the list of colors for the face
+		colors.front()=image.ptr<RGB>(pixels.front()%param.image.width)[pixels.front()/param.image.width];
+
+		// Extract the features from these information
+
+		// Put the features in the output
+  	} 
 }
 
-//* Callback function for the subscriber
-void callback( const traversability_mesh_package::Data::ConstPtr& msg)
-{
-	traversability_mesh_package::Data input=*msg;
-	
-  // spawn another thread
-	boost::thread thread_b(master_thread,input);
 
-}
-
-// Main definition
-int main (int argc, char **argv)
-{
-	//* Node initiation
-  ros::init(argc, argv, "geometry_extractor");
-
-  //* Handle for the node
-  ros::NodeHandle n;
-  
-	//* Subscribe to the coordinated data topic
-  ros::Subscriber input_sub = n.subscribe("base_coord", 10, callback);
-	//* Advertize the coordinated data
-  output_pub = n.advertise<GeoFeature>("/GeoFeatures", 1000);
-
-	
-	ros::spin();
-
-  //exit
-  return 0;
-}
-
-//* Thread functions definition
 void master_thread(traversability_mesh_package::Data param){
   
-
-  //* Retrieve the transformation matrix elements 
-
-	// Transformation from origin to trunk configuration
-  geometry_msgs::Transform T_wt;
-	// retrieve the translation from the world origin to the trunk reference system
-  T_wt.translation.x=param.odom.pose.pose.position.x;
-	T_wt.translation.y=param.odom.pose.pose.position.y;
-	T_wt.translation.z=param.odom.pose.pose.position.z;
-	// retrieve the quaternion of the trunk reference system w.r.t. the world reference system
-  T_wt.rotation=param.odom.pose.pose.orientation;
-
-	// Transformation from trunk to LiDAR
+	// Transformation from LiDAR to camera
   /* ..Can be hardcoded or passed as a parameter(in the final version it will be like this), the most important feature is that is constant.. */
-	geometry_msgs::Transform T_tl;
-  T_tl.translation.x=0.267; // translation of the LiDar along the x-axis
-  T_tl.translation.y=0.000; // translation of the LiDar along the y-axis
-	T_tl.translation.z=0.000; // translation of the LiDar along the z-axis
+	geometry_msgs::Transform T_lc;
+  T_lc.translation.x=0.000; // translation of the LiDar from the camera along the x-axis
+  T_lc.translation.y=0.000; // translation of the LiDar from the camera along the y-axis
+	T_lc.translation.z=0.000; // translation of the LiDar from the camera along the z-axis
   geometry_msgs::Quaternion const_rot; // retrieve the quaternion of the LiDAR reference system w.r.t. the trunk reference system
+  
   const_rot.x=-0.500; // rotation of the LiDar along the x-axis
   const_rot.y=0.500; // rotation of the LiDar along the y-axis
-	const_rot.z=-0.500; // rotation of the LiDar along the z-axis
+  const_rot.z=-0.500; // rotation of the LiDar along the z-axis
   const_rot.w=0.500; // rotation of the LiDar along the w-axis
- 	T_tl.rotation=const_rot;
+ 	
+ 	/*
+  const_rot.x=-0.000; // rotation of the LiDar along the x-axis
+  const_rot.y=0.000; // rotation of the LiDar along the y-axis
+  const_rot.z=-0.000; // rotation of the LiDar along the z-axis
+  const_rot.w=1.000; // rotation of the LiDar along the w-axis
+ 	*/
+	 T_lc.rotation=const_rot;
+
+	// Transformation from camera to pixel-space
+  /* ..Can be hardcoded or passed as a parameter(in the final version it will be like this), the most important feature is that is constant.. */
+	float P[12]={476.7030836014194, 0.0, 400.5, -0.0, 0.0, 476.7030836014194, 400.5, 0.0, 0.0, 0.0, 1.0, 0.0}; // transformation from camera space to pixel space
+  tf::Matrix3x3 t_cp_temp_rot=tf::Matrix3x3(P[0],P[1],P[2],P[4],P[5],P[6],P[8],P[9],P[10]); // reorganization of the terms composing the rotation in a 3x3 matrix
+	tf::Vector3 t_cp_temp_transl; // declaration of the translation vector
+	t_cp_temp_transl.setValue(P[3],P[7],P[11]); // initialization of the translation vector with the remaining terms
+	tf::Transform T_cp=tf::Transform(t_cp_temp_rot,t_cp_temp_transl); // generation of the 4x4 transformation matrix
 
   // Compute the final transformation matrix from LiDAR to world (T[trunk to world]*T[LiDAR to trunk])
-  tf::Transform T_w, T_t, res; // Prepare tf::Transform to perform the calculations
-  tf::transformMsgToTF(T_wt,T_w); // Transform the world to trunk in a transform
-	tf::transformMsgToTF(T_tl,T_t); // Transform the trunk to LiDAR in a transform
-	res.mult(T_w,T_t); // Multiply the two transforms and store them in the resulting final transform (This will be used to compute the lidar point position with respect to the world)
+  tf::Transform T_w, res; // Prepare tf::Transform to perform the calculations
+  tf::transformMsgToTF(T_lc,T_w); // Transform the lidar to camera in a transform
+	res.mult(T_cp,T_w); // Multiply the two transforms and store them in the resulting final transform (This will be used to compute the lidar point position with respect to the pixel of the camera)
+	//res=T_w;
 
-	// We want to use the trunk to world transformation to generate the observation direction of the robot
-	// we set the translation to 0
-  T_wt.translation.x=0;
-	T_wt.translation.y=0;
-	T_wt.translation.z=0;
-	// Generate the new transformation matrix
-	tf::transformMsgToTF(T_wt,T_w); // Transform the world to trunk in a transform
-
-  tf::Vector3 temp; // Temporary location where we can store the x-versor and perform calculations
-	temp.setX(1);
-	temp=T_w.inverse()*temp; // find the x direction of the robot with respect to the world reference frame
-	temp.normalize();
-	//* Initialize the vertices array and give compute all faces neighboring to each vertex
   
-//* Initialize the output
+  
 	//We declare same variables to make the computation easier
 
 	int n_vertices = param.mesh.mesh_geometry.vertices.size(); //number of vertices
@@ -154,7 +326,7 @@ void master_thread(traversability_mesh_package::Data param){
   int p_index; // index of the vertex we are considering at each instant
 	Vertices vertices[n_vertices]; // Initialization of the vertices array
 
-
+  //* Initialize the output
   // Generates arrays of appropriate dimension
 	
 	output.header=param.mesh.header;
@@ -164,12 +336,9 @@ void master_thread(traversability_mesh_package::Data param){
 	output.normals=vector<geometry_msgs::Point>(n_faces);
 	output.baricenters=vector<geometry_msgs::Point>(n_faces);
   output.neighbors=vector<traversability_mesh_package::Proximals>(n_faces);
-	// sight direction (corrisponding to the robot x direction in the world reference frame)
-	output.sight_dir.x=temp.getX();
-	output.sight_dir.y=temp.getY();
-	output.sight_dir.z=temp.getZ(); 
 
 
+	//* Initialize the vertices array and give compute all faces neighboring to each vertex
  	// We perform the loop to find all neighboring faces of each vertex
   for(int i=0; i<n_faces;i++){ // for all faces
 		for(int j=0;j<3;j++){ // for all vertices of a face
@@ -185,138 +354,65 @@ void master_thread(traversability_mesh_package::Data param){
 			}
 		}
 	}
-  
+	
+	// Image conversion to opencv to access rgb data
+	cv_bridge::CvImagePtr cv_ptr;
+    try
+    {
+      cv_ptr = cv_bridge::toCvCopy(param.image,param.image.encoding);
+    }
+    catch (cv_bridge::Exception& e)
+    {
+      ROS_ERROR("cv_bridge exception: %s", e.what());
+      return;
+    }
+
   //* Divide the faces among the number of servers
 	boost::mutex mutex;
 	boost::thread s_t[n_server];
   // compute how many faces should go to each server
 	unsigned int portion = n_faces/n_server; // how many faces the server should handle
-  for(int i=0; i<n_server;i++)
-			s_t[i]=boost::thread(server_thread,i,portion,vertices,res,temp, &mutex);
+  	for(int i=0; i<n_server;i++)
+			s_t[i]=boost::thread(server_thread,i,portion,vertices,param,cv_ptr->image,P[0],T_cp,T_w, &mutex);
 
 	for(int  i=0;i<n_server;i++)
 			s_t[i].join();
-  GeoFeature message;
 
-
+	
   //* Send the feature message 
 	output_pub.publish(output);
 
 }
 
-void server_thread(int index, int portion, Vertices *vertices, tf::Transform transform, tf::Vector3 sight_line, boost::mutex *mutex){
 
-	//Variables declaration
-	tf::Vector3 sum; // Variable to store the sum from which we can obtain the baricenter dividing by 3
-	tf::Vector3 temp1; // Temporary location where we can store points and perform calculations
-	tf::Vector3 temp2; // Temporary location where we can store points and perform calculation
-  int last=(index+1)*portion; // The last index the server should consider is the one immidiately before the one at which the next server start
-	int a=0;
-  if((index+2)*portion>output.mesh.mesh_geometry.faces.size()){ // If there are no other servers
-		a=last;
-		last=output.mesh.mesh_geometry.faces.size(); // The last index is the one of the last server
-  }
-	vector<geometry_msgs::Point> temporary=vector<geometry_msgs::Point>(output.mesh.mesh_geometry.vertices.size());
-	geometry_msgs::Point temporary1;
-
-  //* Loop over all the indices given to the server by the master  
-  for (int i=index*portion;i<last;i++){
+//* Callback function for the subscriber
+void callback( const traversability_mesh_package::Data::ConstPtr& msg)
+{
+	traversability_mesh_package::Data input=*msg;
 	
-		output.neighbors[i].proximals=vector<unsigned int>(20);
-    //* Compute the real position of the vertices
-		mesh_msgs::TriangleIndices cur = output.mesh.mesh_geometry.faces[i]; // store the current face
-		sum*=0;
-		vector<unsigned int> neighbors = vector<unsigned int>(100);
-    vector<unsigned int> temps;
-		vector<unsigned int> itself = vector<unsigned int>(1);
-		int partial=0;
-		
-		for(int j=0;j<3;j++){ // for each vertex
+  // spawn another thread
+	boost::thread thread_b(master_thread,input);
 
-      if(vertices[cur.vertex_indices[j]].check){ // If the point have already been converted in the world reference space
-				// Retrieve the position of the point in the world reference system
-				temp1.setX(vertices[cur.vertex_indices[j]].transformed.x);
-				temp1.setY(vertices[cur.vertex_indices[j]].transformed.y);
-				temp1.setZ(vertices[cur.vertex_indices[j]].transformed.z);
-			}else{ // Otherwise
-			
-				while(1){ // We enter a infinite loop to check the situation of the shared memory
-					if(mutex->try_lock()){ // if you can take control of the mutex	
-						// Store the point in a Vector3
-						temp2.setX(vertices[cur.vertex_indices[j]].transmitted.x);
-						temp2.setY(vertices[cur.vertex_indices[j]].transmitted.y);
-						temp2.setZ(vertices[cur.vertex_indices[j]].transmitted.z);
-						// Transform the point to the world reference fame
-						temp1=transform*temp2;
-						// Store the transformed point in the correct place 
-						vertices[cur.vertex_indices[j]].transformed.x=temp1.getX();
-						vertices[cur.vertex_indices[j]].transformed.y=temp1.getY();
-						vertices[cur.vertex_indices[j]].transformed.z=temp1.getZ();
-						// Save the new point in the output
-						tf::pointTFToMsg (temp1,output.mesh.mesh_geometry.vertices[cur.vertex_indices[j]]);
+}
 
-						vertices[cur.vertex_indices[j]].check=true; // Set the transformation check to true
-						mutex->unlock(); // Unlock the mutex so that other can modify other points if they need
-						break;
-					}else{ // try to see if the thread controlling the mutex is changing the vertex you are interested in
-						if(vertices[cur.vertex_indices[j]].check){ // if it has modified the vertex you are interested in, you just need to read the transformed point 
-							temp1.setX(vertices[cur.vertex_indices[j]].transformed.x);
-							temp1.setY(vertices[cur.vertex_indices[j]].transformed.y);
-							temp1.setZ(vertices[cur.vertex_indices[j]].transformed.z);
-							break;
-						}
-					}
-				}				
-			}
-    
-        
-				for(unsigned int x : vertices[cur.vertex_indices[j]].neighbors) // if you want to add 10 to each element
-    					x ++;
-				
-				output.neighbors[i].proximals.insert(output.neighbors[i].proximals.end(), vertices[cur.vertex_indices[j]].neighbors.begin(), vertices[cur.vertex_indices[j]].neighbors.end());
-				partial+=vertices[cur.vertex_indices[j]].index; 
-			  sum+=temp1; // Update the sum of the vertices positions
-		}
+// Main definition
+int main (int argc, char **argv)
+{
+	//* Node initiation
+  ros::init(argc, argv, "visual_extractor");
 
+  //* Handle for the node
+  ros::NodeHandle n;
+  
+	//* Subscribe to the coordinated data topic
+  ros::Subscriber input_sub = n.subscribe("base_coord", 10, callback);
+	//* Advertize the coordinated data
+  output_pub = n.advertise<GeoFeature>("/GeoFeatures", 1000);
 
-	  //* Find the baricenter in the world reference frame
-		sum/=3; // Divide by 3 to obtain the avarage
-		output.baricenters[i].x=sum.getX();
-		output.baricenters[i].y=sum.getY();
-		output.baricenters[i].z=sum.getZ();
+	
+	ros::spin();
 
-		//* Compute two vectors to compute all the other features of the face (generating taking the vertices 1 and 2 and subtracting the vertex at index 0)
-		temp1.setX(vertices[cur.vertex_indices[1]].transformed.x-vertices[cur.vertex_indices[0]].transformed.x);
-		temp1.setY(vertices[cur.vertex_indices[1]].transformed.y-vertices[cur.vertex_indices[0]].transformed.y);
-		temp1.setZ(vertices[cur.vertex_indices[1]].transformed.z-vertices[cur.vertex_indices[0]].transformed.z);
-		temp2.setX(vertices[cur.vertex_indices[2]].transformed.x-vertices[cur.vertex_indices[0]].transformed.x);
-		temp2.setY(vertices[cur.vertex_indices[2]].transformed.y-vertices[cur.vertex_indices[0]].transformed.y);
-		temp2.setZ(vertices[cur.vertex_indices[2]].transformed.z-vertices[cur.vertex_indices[0]].transformed.z);
-
-		//* Compute the orientation vector of the element
-
-		sum=temp1.cross(temp2); // the orientation vector will be the cross product between the two sides
-		if(sum.dot(sight_line)>0) // we want to correct the orientation since from the mesh reconstruction all mesh elements normals should point to the robot
-			sum*=-1; // With this the dot product is always negative, which mean that the normal is pointing in the direction of the robot
-	  // Of this we compute the length since it gives hints for the computation of the area and to find the versor
-		float L=sum.length(); // Here we find the length of the orientation vector
-		temp1=sum/L; // With this we normalize the vector making temp1 the versor of sum
-		// Input the normals in the output
-    output.normals[i].x=temp1.getX();
-		output.normals[i].y=temp1.getY();
-		output.normals[i].z=temp1.getZ();
-    //* Compute the slope with the modified arccos algorithm
-    float alength =temp1.getZ(); // with this we find the dot product of the orientation with the vertical axis; From this we can compute the slope of the mesh element
-		if(!isnan(alength)){	 // If the normal is defined	
-			float slope = acosine(alength); // compute the slope as the arcosine of the the dot product
-			output.slopes[i]=slope; // fill the slope field
-		}else{
-			output.slopes[i]=M_PI; // we put the maximum possible slope
-		}
-    //* Compute the area of the element
-		float area = L/2; // The area of the mesh element is simply the normal divided by 2
-		output.areas[i]=area; // fill the area field
-		
-  } 
+  //exit
+  return 0;
 }
 

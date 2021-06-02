@@ -63,6 +63,8 @@
   <depend>label_manager</depend>
   <depend>lvr_ros</depend>
   <depend>nav_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>image_transport</depend>
 
 
   <buildtool_depend>catkin</buildtool_depend>

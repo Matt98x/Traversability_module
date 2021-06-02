@@ -19,7 +19,10 @@
 
   <!-- LAUNCHING THE GEOMETRY FEATURES EXTRACTOR -->
   <node name="geometry_extractor" pkg="traversability_mesh_package" type="geometry_extractor" respawn="true" launch-prefix="bash -c 'sleep 40; $0 $@' "/>  -->
-	 
+	
+  <!-- LAUNCHING THE VISUAL FEATURES EXTRACTOR -->
+  <node name="visual_extractor" pkg="traversability_mesh_package" type="visual_extractor" output="screen" launch-prefix="bash -c 'sleep 40; $0 $@'" />
+
 	<!-- LAUNCHING THE TRAVERSABILITY SCORE CALCULATOR -->
    <node name="t_score" pkg="traversability_mesh_package" type="traversability_score" respawn="true" launch-prefix="bash -c 'sleep 40; $0 $@' "/>  
 

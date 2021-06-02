@@ -16,6 +16,8 @@ set(PACKAGE_DEPENDENCIES
   label_manager
   tf2_ros
   lvr_ros
+  cv_bridge
+  image_transport
 )
 
 ## Compile as C++11, supported in ROS Kinetic and newer
@@ -157,6 +159,15 @@ target_link_libraries(geometry_extractor
   ${MPI_CXX_LIBRARIES}
 )
 add_dependencies(geometry_extractor ${catkin_EXPORTED_TARGETS})
+
+## Visual features extractor executable
+add_executable(visual_extractor src/visual_extractor.cpp)
+target_link_libraries(visual_extractor
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${MPI_CXX_LIBRARIES}
+)
+add_dependencies(visual_extractor ${catkin_EXPORTED_TARGETS})
 
 ## Traversability computer executable
 add_executable(traversability_score src/traversability_score.cpp)
