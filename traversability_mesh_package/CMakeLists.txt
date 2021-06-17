@@ -53,11 +53,13 @@ add_definitions(${LVR2_DEFINITIONS} ${OpenCV_DEFINITIONS})
 
 add_message_files(
   FILES
+  Features.msg
   Base.msg
 	Data.msg
 	GeoFeature.msg
 	Proximals.msg
 	RobotState.msg
+  AccMetrics.msg
 )
 
 generate_messages(
@@ -110,6 +112,8 @@ catkin_package(
 ###########
 ## Build ##
 ###########
+
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOTHER_STUFF=1" )
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -169,6 +173,17 @@ target_link_libraries(visual_extractor
 )
 add_dependencies(visual_extractor ${catkin_EXPORTED_TARGETS})
 
+## Pointcloud precision extractor executable
+add_executable(point_extractor src/point_extractor.cpp)
+target_link_libraries(point_extractor
+  ${catkin_LIBRARIES}
+  ${LVR2_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${MPI_CXX_LIBRARIES}
+	${PCL_LIBRARIES}
+)
+add_dependencies(point_extractor ${catkin_EXPORTED_TARGETS})
+
 ## Traversability computer executable
 add_executable(traversability_score src/traversability_score.cpp)
 target_link_libraries(traversability_score
@@ -187,6 +202,15 @@ target_link_libraries(robot_state
   ${MPI_CXX_LIBRARIES}
 )
 add_dependencies(robot_state ${catkin_EXPORTED_TARGETS})
+
+## Mesh display
+add_executable(Traversability_display src/Traversability_display.cpp)
+target_link_libraries(Traversability_display
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${MPI_CXX_LIBRARIES}
+)
+add_dependencies(Traversability_display ${catkin_EXPORTED_TARGETS})
 
 add_executable(rmdt src/rmdt.cpp)
 target_link_libraries(rmdt

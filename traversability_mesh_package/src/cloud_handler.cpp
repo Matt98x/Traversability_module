@@ -20,6 +20,7 @@ using namespace sensor_msgs;
 sensor_msgs::PointCloud2 cloud; // global Point cloud variable
 ros::Publisher point_pub;
 ros::Subscriber point_sub;
+float k; //Size of the voxel used to downsample the pointcloud [m] increasing this increases the trasmission rate while reducing the precision of the consequent mesh
 
 //* Callback function for the synchronizer
 void callback(const sensor_msgs::PointCloud2::ConstPtr& msg3)
@@ -35,11 +36,9 @@ void callback(const sensor_msgs::PointCloud2::ConstPtr& msg3)
 
   //* Convert to PCL data type
   pcl_conversions::toPCL(*msg3, *cloud_in);
-
   //* Perform the actual filtering
   pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
   sor.setInputCloud (cloudPtr);
- 	float k=1.1; //Size of the voxel used to downsample the pointcloud [m] increasing this increases the trasmission rate while reducing the precision of the consequent mesh
   sor.setLeafSize (k*0.1, k*0.1, k*0.1);
   sor.filter (cloud_filtered);
 
@@ -59,9 +58,11 @@ int main (int argc, char **argv)
 
   //* Handle for the node
   ros::NodeHandle n;
-
+  std::string point_topic;
+  n.getParam("handler_precision",k);
+  n.getParam("input_pointcloud",point_topic);
 	//* Subscribe to the pointcloud
-  point_sub = n.subscribe("pointcloud", 1000, callback);
+  point_sub = n.subscribe(point_topic, 1000, callback);
   //* Advertize the coordinated data
   point_pub = n.advertise<sensor_msgs::PointCloud2>("checkpoint", 1000);
 

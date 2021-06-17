@@ -6,6 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /MarkerArray1
+        - /TriangleMesh1
       Splitter Ratio: 0.5
     Tree Height: 247
   - Class: rviz/Selection
@@ -197,36 +199,6 @@ Visualization Manager:
       Update Interval: 0
       Value: true
       Visual Enabled: true
-    - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
-        Value: true
-      Axis: Z
-      Channel Name: intensity
-      Class: rviz/PointCloud2
-      Color: 255; 255; 255
-      Color Transformer: Intensity
-      Decay Time: 0
-      Enabled: true
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Max Intensity: 0
-      Min Color: 0; 0; 0
-      Min Intensity: 0
-      Name: PointCloud2
-      Position Transformer: XYZ
-      Queue Size: 10
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.009999999776482582
-      Style: Flat Squares
-      Topic: /pointcloud
-      Unreliable: false
-      Use Fixed Frame: true
-      Use rainbow: true
-      Value: true
     - Class: rviz/Image
       Enabled: true
       Image Topic: /camera1/color/image_raw
@@ -238,6 +210,33 @@ Visualization Manager:
       Queue Size: 2
       Transport Hint: raw
       Unreliable: false
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /display
+      Name: MarkerArray
+      Namespaces:
+        markers: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz_mesh_plugin/TriangleMesh
+      Display Type:
+        Faces Alpha: 1
+        Faces Color: 0; 255; 0
+        Value: Hide Faces
+      Enabled: true
+      Mesh Buffer Size: 1
+      Name: TriangleMesh
+      Show Normals:
+        Normals Alpha: 1
+        Normals Color: 255; 0; 255
+        Normals Scaling Factor: 0.10000000149011612
+        Value: true
+      Show Wireframe:
+        Value: true
+        Wireframe Alpha: 1
+        Wireframe Color: 0; 0; 0
+      Topic: /test_msg
       Value: true
   Enabled: true
   Global Options:
@@ -267,25 +266,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 8.705166816711426
+      Distance: 12.705046653747559
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.004972071386873722
-        Y: -0.25651752948760986
-        Z: 0.36617323756217957
+        X: 1.3255118131637573
+        Y: 0.8373423218727112
+        Z: 0.5607767105102539
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.17539800703525543
+      Pitch: 0.43539759516716003
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.4953978657722473
+      Yaw: 2.3153982162475586
     Saved: ~
 Window Geometry:
   Displays:

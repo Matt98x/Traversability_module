@@ -22,6 +22,7 @@ ros::Publisher output_pub; // output publisher
 void callback( const nav_msgs::Odometry::ConstPtr& msg1, const nav_msgs::Odometry::ConstPtr& msg2, const nav_msgs::Odometry::ConstPtr& msg3, const nav_msgs::Odometry::ConstPtr& msg4, const nav_msgs::Odometry::ConstPtr& msg5)
 { 
 	RobotState output; // initialize the output message
+	output.header=(*msg1).header;
 	output.state= std::vector<Odometry>(5); // initialize the state with the correct number of feet + 1
 	output.state[0]=*msg1;
 	output.state[1]=*msg2;

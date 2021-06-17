@@ -14,18 +14,10 @@
 // Message libraries
 #include <traversability_mesh_package/RobotState.h>
 #include <traversability_mesh_package/GeoFeature.h>
+// Score calculation library
+#include <score_calculators.h>
 
 using namespace std;
-
-//* Global variables declaration
-float gen_param[3]={1,0,0}; // score computer parameters to weight different 
-float geo_param[5]={1,1,1,1,1}; // temporary variable to store the parameters for the score computation (order= number of neighbors, distance from the foot, step_height, total area, slope cost)
-float sum_geom_param; // sum of all the geometrical param to normaliye the score from 0 to 1
-// Times (elapsed from the moment the pointcloud have been captured to the moment the recent pose have been extracted)
-// Orientations(robot current direction and the direction from which the mesh was taken)
-float step_height_max=10; // maximum step height 
-float slope_max=0.35;// maximum allowed slope
-float max_ang_diff=0.05; // maximum allowed angular difference for similarity
 
 //* Geometry based traverversability score calculator
 float geom_calculator(int index, traversability_mesh_package::GeoFeature param,traversability_mesh_package::RobotState rstate){
@@ -35,7 +27,6 @@ float geom_calculator(int index, traversability_mesh_package::GeoFeature param,t
 	float distance=0; // Distance from the robot reference system to the face baricenter
 	float area=param.areas[index]; // Area of the face
 	float slope=param.slopes[index]; // Slope of the face
-
 	// Neighbors
 	auto neighbors=param.neighbors[index].proximals; //extract the neighbors
 	sort( neighbors.begin(), neighbors.end() ); // sort them

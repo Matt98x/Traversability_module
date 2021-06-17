@@ -1,0 +1,32 @@
+# Topics parameters
+input_image: "/camera1/color/image_raw" # topic containing the image
+input_pointcloud: "/pointcloud" # topic containing the pointcloud
+input_state: "/robot_state" # topic containing the various positions of the robot links
+
+# Transformation matrices
+transform_body_lidar: [0.267,0.000,0.000,-0.500,0.500,-0.500,0.500] # transformation terms (translation-xyz[0-2],rotations-xyzw[3-6](in quaternions)) defining camera frame objects in body frame
+transform_camera_lidar: [0.000,0.000,0.000,-0.500,0.500,-0.500,0.500] # transformation terms (translation[0-2],rotations[3-6](in quaternions)) defining lidar frame objects in camera frame
+
+# Points features extractor parameters
+points_n_servers: 3 # number of servers for the point extractor
+point_extractor_precision: 0.9 #Size of the voxel used to downsample the pointcloud [m] increasing this increases the trasmission rate while reducing the precision of the consequent mesh
+
+# Geometry features extractor parameters
+geometry_n_servers: 3 # number of servers for the geometry extractor
+
+# Visual features extractor parameters
+visual_n_servers: 2 # number of servers for the visual extractor
+visual_threshold: 10 # minimum height in pixel to perform the analysis of the material
+camera_parameters: [476.7030836014194, 0.0, 400.5, -0.0, 0.0, 476.7030836014194, 400.5, 0.0, 0.0, 0.0, 1.0, 0.0] # parameters of the camera
+
+# Traversability score
+general_weight: [1,0,0] # weight for the three types of score (geometrical,visual and on the pointcloud)
+
+# Cloud handler precision
+handler_precision: 0.9 # density of the pointcloud to be used in the mesh generation
+
+# Geometry specific parameters
+geometric_weight: [0,0,0,0,1] # geometric weights (order= number of neighbors, distance from the foot, step_height, total area, slope cost)
+max_step_height: 10.0 # maximum step height of the robot of the mesh element [cm]
+maximum_slope: rad(20*pi/180) # maximum slope of the mesh element
+max_ang_diff: rad(0.05) # maximum angular difference between two faces to be considered on the same plane

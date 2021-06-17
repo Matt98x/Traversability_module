@@ -37,7 +37,7 @@ using namespace std;
 //* Variable declaration
 ros::Publisher output_pub;
 int n_server=1; // temporary solution to define the number of servers, later to be made in a parameter of the package
-
+vector<float> transform_lt; // Transformation matrix from lidar to trunk reference frame
 boost::mutex mutex1;
 vector<Data> List(10);
 traversability_mesh_package::GeoFeature output; // the output is the mesh plus the geometrical features that will be extracted now
@@ -50,7 +50,7 @@ typedef struct Vertices {
 	bool check = false; // check  to see whether it has been transformed
 	bool constructed = false; // initialize the constructed attribute to false 
 	int index=0;  // index on which the neighbor is written
-  vector<unsigned int> neighbors=vector<unsigned int>(20);  // number of neighbours initialized to one
+  vector<unsigned int> neighbors=vector<unsigned int>(1);  // number of neighbours initialized to one
 } Vertices;
 
 
@@ -71,10 +71,14 @@ float acosine(float theta){
 void callback( const traversability_mesh_package::Data::ConstPtr& msg)
 {
 	traversability_mesh_package::Data input=*msg;
-	
-  // spawn another thread
-	boost::thread thread_b(master_thread,input);
-
+	try{
+		//ROS_INFO("%d",int(input.mesh.mesh_geometry.faces.size()));
+  		// spawn another thread
+		boost::thread thread_b(master_thread,input);
+	}catch(...){
+		ROS_INFO("An error occured");
+	}
+	return;
 }
 
 // Main definition
@@ -85,7 +89,8 @@ int main (int argc, char **argv)
 
   //* Handle for the node
   ros::NodeHandle n;
-  
+  n.getParam("transform_body_lidar",transform_lt);
+
 	//* Subscribe to the coordinated data topic
   ros::Subscriber input_sub = n.subscribe("base_coord", 10, callback);
 	//* Advertize the coordinated data
@@ -112,20 +117,18 @@ void master_thread(traversability_mesh_package::Data param){
 	T_wt.translation.z=param.odom.pose.pose.position.z;
 	// retrieve the quaternion of the trunk reference system w.r.t. the world reference system
   T_wt.rotation=param.odom.pose.pose.orientation;
-
+	//ROS_INFO("%f %f %f %f %f %f %f",transform_lt[0],transform_lt[1],transform_lt[2],transform_lt[3],transform_lt[4],transform_lt[5],transform_lt[6]);
 	// Transformation from trunk to LiDAR
-  /* ..Can be hardcoded or passed as a parameter(in the final version it will be like this), the most important feature is that is constant.. */
 	geometry_msgs::Transform T_tl;
-  T_tl.translation.x=0.267; // translation of the LiDar along the x-axis
-  T_tl.translation.y=0.000; // translation of the LiDar along the y-axis
-	T_tl.translation.z=0.000; // translation of the LiDar along the z-axis
+  T_tl.translation.x=transform_lt[0]; // translation of the LiDar along the x-axis
+  T_tl.translation.y=transform_lt[1]; // translation of the LiDar along the y-axis
+	T_tl.translation.z=transform_lt[2]; // translation of the LiDar along the z-axis
   geometry_msgs::Quaternion const_rot; // retrieve the quaternion of the LiDAR reference system w.r.t. the trunk reference system
-  const_rot.x=-0.500; // rotation of the LiDar along the x-axis
-  const_rot.y=0.500; // rotation of the LiDar along the y-axis
-	const_rot.z=-0.500; // rotation of the LiDar along the z-axis
-  const_rot.w=0.500; // rotation of the LiDar along the w-axis
+  const_rot.x=transform_lt[3]; // rotation of the LiDar along the x-axis
+  const_rot.y=transform_lt[4]; // rotation of the LiDar along the y-axis
+	const_rot.z=transform_lt[5]; // rotation of the LiDar along the z-axis
+  const_rot.w=transform_lt[6]; // rotation of the LiDar along the w-axis
  	T_tl.rotation=const_rot;
-
   // Compute the final transformation matrix from LiDAR to world (T[trunk to world]*T[LiDAR to trunk])
   tf::Transform T_w, T_t, res; // Prepare tf::Transform to perform the calculations
   tf::transformMsgToTF(T_wt,T_w); // Transform the world to trunk in a transform
@@ -145,14 +148,13 @@ void master_thread(traversability_mesh_package::Data param){
 	temp=T_w.inverse()*temp; // find the x direction of the robot with respect to the world reference frame
 	temp.normalize();
 	//* Initialize the vertices array and give compute all faces neighboring to each vertex
-  
 //* Initialize the output
 	//We declare same variables to make the computation easier
 
 	int n_vertices = param.mesh.mesh_geometry.vertices.size(); //number of vertices
 	int n_faces = param.mesh.mesh_geometry.faces.size(); // number of faces
   int p_index; // index of the vertex we are considering at each instant
-	Vertices vertices[n_vertices]; // Initialization of the vertices array
+	Vertices vertices [n_vertices]; // Initialization of the vertices array
 
 
   // Generates arrays of appropriate dimension
@@ -168,8 +170,7 @@ void master_thread(traversability_mesh_package::Data param){
 	output.sight_dir.x=temp.getX();
 	output.sight_dir.y=temp.getY();
 	output.sight_dir.z=temp.getZ(); 
-
-
+	
  	// We perform the loop to find all neighboring faces of each vertex
   for(int i=0; i<n_faces;i++){ // for all faces
 		for(int j=0;j<3;j++){ // for all vertices of a face
@@ -180,11 +181,14 @@ void master_thread(traversability_mesh_package::Data param){
 				vertices[p_index].neighbors[vertices[p_index].index]=i; // say that the first neighboring face is the one at which the face has been initialized
 				vertices[p_index].index++; // Increment the writing index
 			}else{
-				vertices[p_index].neighbors[vertices[p_index].index]=i; // say that the first neighboring face is the one at which the face has been initialized
+				//vertices[p_index].neighbors[vertices[p_index].index]=i; // say that the first neighboring face is the one at which the face has been initialized
+				vertices[p_index].neighbors.insert(vertices[p_index].neighbors.end(),i);
 				vertices[p_index].index++; // Increment the writing index
 			}
 		}
 	}
+	
+	
   
   //* Divide the faces among the number of servers
 	boost::mutex mutex;
@@ -197,11 +201,10 @@ void master_thread(traversability_mesh_package::Data param){
 	for(int  i=0;i<n_server;i++)
 			s_t[i].join();
   GeoFeature message;
-
-
+	
   //* Send the feature message 
-	output_pub.publish(output);
-
+	output_pub.publish(output);  
+	return ;
 }
 
 void server_thread(int index, int portion, Vertices *vertices, tf::Transform transform, tf::Vector3 sight_line, boost::mutex *mutex){
@@ -211,14 +214,12 @@ void server_thread(int index, int portion, Vertices *vertices, tf::Transform tra
 	tf::Vector3 temp1; // Temporary location where we can store points and perform calculations
 	tf::Vector3 temp2; // Temporary location where we can store points and perform calculation
   int last=(index+1)*portion; // The last index the server should consider is the one immidiately before the one at which the next server start
-	int a=0;
   if((index+2)*portion>output.mesh.mesh_geometry.faces.size()){ // If there are no other servers
-		a=last;
 		last=output.mesh.mesh_geometry.faces.size(); // The last index is the one of the last server
   }
 	vector<geometry_msgs::Point> temporary=vector<geometry_msgs::Point>(output.mesh.mesh_geometry.vertices.size());
 	geometry_msgs::Point temporary1;
-
+	
   //* Loop over all the indices given to the server by the master  
   for (int i=index*portion;i<last;i++){
 	
@@ -269,16 +270,17 @@ void server_thread(int index, int portion, Vertices *vertices, tf::Transform tra
 				}				
 			}
     
-        
+				
 				for(unsigned int x : vertices[cur.vertex_indices[j]].neighbors) // if you want to add 10 to each element
     					x ++;
 				
 				output.neighbors[i].proximals.insert(output.neighbors[i].proximals.end(), vertices[cur.vertex_indices[j]].neighbors.begin(), vertices[cur.vertex_indices[j]].neighbors.end());
 				partial+=vertices[cur.vertex_indices[j]].index; 
+				
 			  sum+=temp1; // Update the sum of the vertices positions
 		}
 
-
+	
 	  //* Find the baricenter in the world reference frame
 		sum/=3; // Divide by 3 to obtain the avarage
 		output.baricenters[i].x=sum.getX();
@@ -318,5 +320,6 @@ void server_thread(int index, int portion, Vertices *vertices, tf::Transform tra
 		output.areas[i]=area; // fill the area field
 		
   } 
+  return;
 }
 

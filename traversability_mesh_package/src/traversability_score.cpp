@@ -35,6 +35,8 @@
 // Score calculation library
 #include <score_calculators.h>
 
+
+
 //* Setting namespaces and typedef to symplify the typing
 using namespace sensor_msgs;
 using namespace mesh_msgs;
@@ -81,11 +83,19 @@ int main (int argc, char **argv)
 	//* Node initiation
   ros::init(argc, argv, "score_computer");
 
-  //* Handle for the node
-  ros::NodeHandle n;
+	//* Handle for the node
+	ros::NodeHandle n;
+	std::string robot_state;
+	//* Get the value from the parameter server
+	n.getParam("/general_weight",gen_param);
+	n.getParam("/geometric_weight",geo_param);
+	n.getParam("/max_step_height",step_height_max);
+	n.getParam("/maximum_slope",slope_max);
+	n.getParam("/max_ang_diff",max_ang_diff);
+	n.getParam("/input_state",robot_state);
 
   //* Subscribe to the localization topic
-  ros::Subscriber state_sub = n.subscribe("/robot_state", 1000, odomcallback);
+  ros::Subscriber state_sub = n.subscribe(robot_state, 1000, odomcallback);
 	//* Subscribe to the Geometric features data topic
   ros::Subscriber feature_sub = n.subscribe("/GeoFeatures", 1000, callback);
 
@@ -136,10 +146,8 @@ void server_thread(int index, int portion, traversability_mesh_package::GeoFeatu
 	tf::Vector3 temp1; // Temporary location where we can store points and perform calculations
 	tf::Vector3 temp2; // Temporary location where we can store points and perform calculation
   int last=(index+1)*portion; // The last index the server should consider is the one immidiately before the one at which the next server start
-	int a=0;
   if((index+2)*portion>param.mesh.mesh_geometry.faces.size()){ // If there are no other servers
-		a=last;
-		last=param.mesh.mesh_geometry.faces.size(); // The last index is the one of the last server
+		last=param.mesh.mesh_geometry.faces.size(); // The last index is the one of the last server 
   }
 
 	

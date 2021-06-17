@@ -7,6 +7,7 @@
 #include <nav_msgs/Odometry.h>
 #include <traversability_mesh_package/Data.h>
 #include <traversability_mesh_package/GeoFeature.h>
+#include <traversability_mesh_package/Features.h>
 // Thread related functions
 #include <std_msgs/Empty.h>
 #include <boost/bind.hpp>
@@ -48,10 +49,10 @@ using namespace std;
 
 //* Variable declaration
 ros::Publisher output_pub;
-//tf2_ros::Buffer tfBuffer;
-//tf2_ros::TransformListener tfListener(tfBuffer);
-int n_server=1; // temporary solution to define the number of servers, later to be made in a parameter of the package
-
+int n_server=2; // temporary solution to define the number of servers, later to be made in a parameter of the package
+int threshold=10; // threshold for the computation on the features(applied only for triangles with height exceeding the value of the threshold)
+vector<float> P; // transformation from camera space to pixel space
+vector<float> transform_lc; // transformation from lidar to camera 
 boost::mutex mutex1;
 vector<Data> List(10);
 traversability_mesh_package::GeoFeature output; // the output is the mesh plus the geometrical features that will be extracted now
@@ -65,14 +66,80 @@ typedef struct Vertices {
 	bool check = false; // check  to see whether it has been transformed
 	bool constructed = false; // initialize the constructed attribute to false 
 	int index=0;  // index on which the neighbor is written
-  vector<unsigned int> neighbors=vector<unsigned int>(20);  // number of neighbours initialized to one
+  vector<unsigned int> neighbors=vector<unsigned int>(1);  // number of neighbours initialized to one
 } Vertices;
+
+// Histogram class
+struct histogram{
+	int intensity;
+	int counter;
+};
 
 // Color class definition
 struct RGB {
     uchar blue;
     uchar green;
     uchar red;  };
+
+// Face features extraction
+void features_extraction(list<RGB> colors, float *features){
+	//variables declaration 
+	int mr=0,mb=0,mg=0;
+	list<histogram> p=list<histogram>(0);
+	int zi=0,k=0,counter=0;
+	
+	// Features extraction
+	// First we compute the mean red,green, blue and intensity value, along with the histogram of each intensity value and the length of the histogram
+	for(RGB c : colors){
+		mr+=c.red; // adder for the red value
+		mg+=c.green; // adder for the red value
+		mb+=c.blue; // adder for the red value
+		k=0;
+		zi=int(sqrt((c.red*c.red)+(c.green*c.green)+(c.blue*c.blue))); // intensity value of the pixel
+		
+		list<histogram>::iterator f = p.begin();
+    	for(int i=0; i<p.size(); i++){
+        	++f;
+			if(abs((*f).intensity-zi)<0.25){
+				(*f).counter++; // add to the counter
+				k=1; // say that the the item is already in the list
+				//break;
+			}
+			//ROS_INFO("%d %d %d",(*f).counter,(*f).intensity,zi);
+    	}
+		
+		if(k<1 || p.size()<1){ // if the item was not in the list
+			histogram temp; // initialize a temporary variable for the instagram
+			temp.intensity=zi; // set the intensity
+			temp.counter=1; // set the counter to 1
+			p.insert(p.end(),temp); // Put the element in the list
+		}		
+		counter++;
+	}
+	
+
+	features[0]=float(mr)/float(counter); // mean r
+	features[1]=float(mb)/float(counter); // mean blue
+	features[2]=float(mg)/float(counter); // mean green
+	
+	// Now we can compute the rest of the features
+	for(histogram i : p){
+		if(i.counter!=0){
+			features[3]+=i.intensity*float(i.counter)/float(counter); //mean intensity value
+		}
+	}
+	for(histogram i : p){
+		if(i.counter!=0){
+			features[4]+=(i.intensity-features[3])*(i.intensity-features[3])*float(i.counter)/float(counter); // variance of the grey image
+			features[6]+=(i.intensity-features[3])*(i.intensity-features[3])*(i.intensity-features[3])*float(i.counter)/float(counter);; // skewness of the intensity histogram
+			features[7]+=(float(i.counter)/float(counter))*float(i.counter)/float(counter); // uniformity
+			features[8]+=(float(i.counter)/float(counter))*log2(float(i.counter)/float(counter)); // entropy or randomness for the gray levels
+		}
+	}
+	features[4]=sqrt(features[4]); // compute the standard deviation from the variance
+	features[5]=features[4]/(1+features[4]); // smoothness of the gray image
+	features[8]=-features[8]; // put the negative sign
+}
 
 // Function to obtain the pixel indices of a face
 int addPixels(list<int>& pixels,int* pixely,int* pixelx,int indtop,int indbottom, float m3, int temp, int ind3,int width, int k){
@@ -112,7 +179,7 @@ int addPixels(list<int>& pixels,int* pixely,int* pixelx,int indtop,int indbottom
 				pixels.front()=index; // for the fist elemet simply give the correct value
 				k=1; // signal that this is not the first element anymore 
 			}else{
-				pixels.insert(pixels.end(),index); // add the index to the list of pixels related to the 
+				pixels.insert(pixels.end(),index); // add the index to the list of pixels related to the pixels list
 			}
 		}
 		
@@ -124,22 +191,19 @@ int addPixels(list<int>& pixels,int* pixely,int* pixelx,int indtop,int indbottom
 }
 
 //* Thread functions declaration
-void server_thread(int index, int portion, Vertices *vertices,traversability_mesh_package::Data param,cv::Mat image,float f, tf::Transform transform1,tf::Transform transform2, boost::mutex *mutex){
+void  server_thread(int index, int portion, Vertices *vertices,traversability_mesh_package::Data param,cv::Mat image,float f, tf::Transform transform1,tf::Transform transform2, boost::mutex *mutex){
 
 	//Variables declaration
 	tf::Vector3 sum; // Variable to store the sum from which we can obtain the baricenter dividing by 3
 	tf::Vector3 temp1; // Temporary location where we can store points and perform calculations
 	tf::Vector3 temp2; // Temporary location where we can store points and perform calculation
   int last=(index+1)*portion; // The last index the server should consider is the one immidiately before the one at which the next server start
-	int a=0;
   if((index+2)*portion>output.mesh.mesh_geometry.faces.size()){ // If there are no other servers
-		a=last;
 		last=output.mesh.mesh_geometry.faces.size(); // The last index is the one of the last server
   }
-	vector<geometry_msgs::Point> temporary=vector<geometry_msgs::Point>(output.mesh.mesh_geometry.vertices.size());
+	vector<geometry_msgs::Point> temporary=vector<geometry_msgs::Point>(output.mesh.mesh_geometry.vertices.size()); 
 	geometry_msgs::Point temporary1;
 
-	float quotient1,quotient2,quotient3,limit1,limit2,limit3;
 	float min_,max_;
 	int indmin=0;
 	int indmax=0;
@@ -155,7 +219,6 @@ void server_thread(int index, int portion, Vertices *vertices,traversability_mes
 		output.neighbors[i].proximals=vector<unsigned int>(20);
     	//* Compute the real position of the vertices
 		mesh_msgs::TriangleIndices cur = output.mesh.mesh_geometry.faces[i]; // store the current face
-		int partial=0;
 		// Vertices transformation
 		for(int j=0;j<3;j++){ // for each vertex
 
@@ -260,52 +323,64 @@ void server_thread(int index, int portion, Vertices *vertices,traversability_mes
 			m3= x_array[indmax];
 			temp=1;
 		}else{
-			m3=float(yarray[indmax]-yarray[indmin])/float(xarray[indmax]-xarray[indmin]); // find the 
+			m3=float(yarray[indmax]-yarray[indmin])/float(xarray[indmax]-xarray[indmin]); // find the slope of the other line
 			temp=0;
 		}
-		// Compute the pixels inside the face
-		list<int> pixels=list<int>(1); // initialize the pixel list
-		int shift=addPixels(pixels,yarray,xarray,indmax,indmed,m3,temp,indmin,param.image.width,0); // compute the pixels for the upper triangle
-		shift=addPixels(pixels,yarray,xarray,indmed,indmin,m3,temp,indmin,param.image.width,1); // compute the pixels for the lower triangle
-		//ROS_INFO("%d\n",pixels.size());
+		float features[9]={0}; // features of the face
+		if(abs(yarray[indmax]-yarray[indmin])>threshold){
+			// Compute the pixels inside the face
+			list<int> pixels=list<int>(1); // initialize the pixel list
+			int shift=addPixels(pixels,yarray,xarray,indmax,indmed,m3,temp,indmin,param.image.width,0); // compute the pixels for the upper triangle
+			shift=addPixels(pixels,yarray,xarray,indmed,indmin,m3,temp,indmin,param.image.width,1); // compute the pixels for the lower triangle
+			//ROS_INFO("%d",pixels.size());
 
-		// Extract the rgb information for each pixel 
-		list<RGB> colors=list<RGB>(0); // initialization of the list of colors for the face
-		colors.front()=image.ptr<RGB>(pixels.front()%param.image.width)[pixels.front()/param.image.width];
-
-		// Extract the features from these information
-
-		// Put the features in the output
+			// Extract the rgb information for each pixel 
+			list<RGB> colors=list<RGB>(0); // initialization of the list of colors for the face
+			colors.front()=image.ptr<RGB>(pixels.front()%param.image.width)[pixels.front()/param.image.width];
+			
+			// Extract the features from these information
+			for(int p : pixels){
+				colors.insert(colors.end(),image.ptr<RGB>(pixels.front()%param.image.width)[pixels.front()/param.image.width]); // add the color to the list of colors of the face pixels
+			}
+			//ROS_INFO("%d %d %d", colors.front().red,colors.front().blue,colors.front().green);
+			// Put the features in the output
+			
+			features_extraction( colors, features); // compute the features
+		}
+		// Initialize the feature portion for the face in the output
+		output.face_features[i]=Features();
+		// Input the features in the output
+		for(int l=0;l<9;l++){
+			//ROS_INFO("%f",features[l]);
+			output.face_features[i].features.at(l)=features[l];//features[l];
+		}
   	} 
+	  return;
 }
 
-
+// Master thread function
 void master_thread(traversability_mesh_package::Data param){
   
 	// Transformation from LiDAR to camera
   /* ..Can be hardcoded or passed as a parameter(in the final version it will be like this), the most important feature is that is constant.. */
 	geometry_msgs::Transform T_lc;
-  T_lc.translation.x=0.000; // translation of the LiDar from the camera along the x-axis
-  T_lc.translation.y=0.000; // translation of the LiDar from the camera along the y-axis
-	T_lc.translation.z=0.000; // translation of the LiDar from the camera along the z-axis
+  T_lc.translation.x=transform_lc[0]; // translation of the LiDar from the camera along the x-axis
+  T_lc.translation.y=transform_lc[1]; // translation of the LiDar from the camera along the y-axis
+	T_lc.translation.z=transform_lc[2]; // translation of the LiDar from the camera along the z-axis
   geometry_msgs::Quaternion const_rot; // retrieve the quaternion of the LiDAR reference system w.r.t. the trunk reference system
   
-  const_rot.x=-0.500; // rotation of the LiDar along the x-axis
-  const_rot.y=0.500; // rotation of the LiDar along the y-axis
-  const_rot.z=-0.500; // rotation of the LiDar along the z-axis
-  const_rot.w=0.500; // rotation of the LiDar along the w-axis
+  const_rot.x=transform_lc[3]; // rotation of the LiDar along the x-axis
+  const_rot.y=transform_lc[4]; // rotation of the LiDar along the y-axis
+  const_rot.z=transform_lc[5]; // rotation of the LiDar along the z-axis
+  const_rot.w=transform_lc[6]; // rotation of the LiDar along the w-axis
  	
- 	/*
-  const_rot.x=-0.000; // rotation of the LiDar along the x-axis
-  const_rot.y=0.000; // rotation of the LiDar along the y-axis
-  const_rot.z=-0.000; // rotation of the LiDar along the z-axis
-  const_rot.w=1.000; // rotation of the LiDar along the w-axis
- 	*/
+	//ROS_INFO("%f %f %f %f %f %f %f",transform_lc[0],transform_lc[1],transform_lc[2],transform_lc[3],transform_lc[4],transform_lc[5],transform_lc[6]);
+	//ROS_INFO("%f %f %f %f %f %f %f",P[0],P[1],P[2],P[3],P[4],P[5],P[6]);
+
+
 	 T_lc.rotation=const_rot;
 
 	// Transformation from camera to pixel-space
-  /* ..Can be hardcoded or passed as a parameter(in the final version it will be like this), the most important feature is that is constant.. */
-	float P[12]={476.7030836014194, 0.0, 400.5, -0.0, 0.0, 476.7030836014194, 400.5, 0.0, 0.0, 0.0, 1.0, 0.0}; // transformation from camera space to pixel space
   tf::Matrix3x3 t_cp_temp_rot=tf::Matrix3x3(P[0],P[1],P[2],P[4],P[5],P[6],P[8],P[9],P[10]); // reorganization of the terms composing the rotation in a 3x3 matrix
 	tf::Vector3 t_cp_temp_transl; // declaration of the translation vector
 	t_cp_temp_transl.setValue(P[3],P[7],P[11]); // initialization of the translation vector with the remaining terms
@@ -331,11 +406,12 @@ void master_thread(traversability_mesh_package::Data param){
 	
 	output.header=param.mesh.header;
 	output.mesh=param.mesh;
-  output.areas=vector<double>(n_faces);;
+	output.areas=vector<double>(n_faces);;
 	output.slopes=vector<double>(n_faces);
 	output.normals=vector<geometry_msgs::Point>(n_faces);
 	output.baricenters=vector<geometry_msgs::Point>(n_faces);
-  output.neighbors=vector<traversability_mesh_package::Proximals>(n_faces);
+	output.neighbors=vector<traversability_mesh_package::Proximals>(n_faces);
+	output.face_features=vector<traversability_mesh_package::Features>(n_faces);
 
 
 	//* Initialize the vertices array and give compute all faces neighboring to each vertex
@@ -349,7 +425,8 @@ void master_thread(traversability_mesh_package::Data param){
 				vertices[p_index].neighbors[vertices[p_index].index]=i; // say that the first neighboring face is the one at which the face has been initialized
 				vertices[p_index].index++; // Increment the writing index
 			}else{
-				vertices[p_index].neighbors[vertices[p_index].index]=i; // say that the first neighboring face is the one at which the face has been initialized
+				//vertices[p_index].neighbors[vertices[p_index].index]=i; // say that the first neighboring face is the one at which the face has been initialized
+				vertices[p_index].neighbors.insert(vertices[p_index].neighbors.end(),i);
 				vertices[p_index].index++; // Increment the writing index
 			}
 		}
@@ -370,6 +447,7 @@ void master_thread(traversability_mesh_package::Data param){
   //* Divide the faces among the number of servers
 	boost::mutex mutex;
 	boost::thread s_t[n_server];
+	
   // compute how many faces should go to each server
 	unsigned int portion = n_faces/n_server; // how many faces the server should handle
   	for(int i=0; i<n_server;i++)
@@ -381,9 +459,9 @@ void master_thread(traversability_mesh_package::Data param){
 	
   //* Send the feature message 
 	output_pub.publish(output);
+	return;
 
 }
-
 
 //* Callback function for the subscriber
 void callback( const traversability_mesh_package::Data::ConstPtr& msg)
@@ -403,16 +481,15 @@ int main (int argc, char **argv)
 
   //* Handle for the node
   ros::NodeHandle n;
-  
+  n.getParam("camera_parameters",P);
+  n.getParam("transform_camera_lidar",transform_lc);
 	//* Subscribe to the coordinated data topic
   ros::Subscriber input_sub = n.subscribe("base_coord", 10, callback);
 	//* Advertize the coordinated data
-  output_pub = n.advertise<GeoFeature>("/GeoFeatures", 1000);
+  output_pub = n.advertise<GeoFeature>("/VisFeatures", 1000);
 
-	
 	ros::spin();
 
   //exit
   return 0;
 }
-
