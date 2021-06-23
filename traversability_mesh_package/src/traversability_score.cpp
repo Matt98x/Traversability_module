@@ -92,7 +92,7 @@ int main (int argc, char **argv)
 	n.getParam("/max_step_height",step_height_max);
 	n.getParam("/maximum_slope",slope_max);
 	n.getParam("/max_ang_diff",max_ang_diff);
-	n.getParam("/input_state",robot_state);
+	n.getParam("/robot_state",robot_state);
 
   //* Subscribe to the localization topic
   ros::Subscriber state_sub = n.subscribe(robot_state, 1000, odomcallback);

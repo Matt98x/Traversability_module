@@ -218,6 +218,33 @@ target_link_libraries(rmdt
 )
 add_dependencies(rmdt ${catkin_EXPORTED_TARGETS})
 
+## Alternative State publisher for robot application
+add_executable(alternative_state src/alternative_state.cpp)
+target_link_libraries(alternative_state
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${MPI_CXX_LIBRARIES}
+)
+add_dependencies(alternative_state ${catkin_EXPORTED_TARGETS})
+
+## Alternative State publisher for robot application
+add_executable(relayer1 src/relayer1.cpp)
+target_link_libraries(relayer1
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${MPI_CXX_LIBRARIES}
+)
+add_dependencies(relayer1 ${catkin_EXPORTED_TARGETS})
+
+## Alternative State publisher for robot application
+add_executable(relayer2 src/relayer2.cpp)
+target_link_libraries(relayer2
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${MPI_CXX_LIBRARIES}
+)
+add_dependencies(relayer2 ${catkin_EXPORTED_TARGETS})
+
 #############
 ## Install ##
 #############

@@ -1,25 +1,26 @@
 # Topics parameters
-input_image: "/camera1/color/image_raw" # topic containing the image
-input_pointcloud: "/pointcloud" # topic containing the pointcloud
+input_image: "/camera/color/image_raw" # topic containing the image
+input_pointcloud: "/camera/depth/color/points" # topic containing the pointcloud
 robot_state: "/robot_state" # topic containing the various positions of the robot links (in case one already has a complete topic)
 
 # In case someone just has the position of the robot in the world reference frame and the feet position in the body reference frame, the following topics
 # can be use with the script "robot_state.cpp"
-body_state: "/odom" # topic containing the various positions of the robot body
-FL_foot: "pos/FL_foot" # topic containing the various positions of the front left foot
-FR_foot: "pos/FR_foot" # topic containing the various positions of the front right foot 
-RL_foot: "pos/RL_foot" # topic containing the various positions of the rear left foot
-RR_foot: "pos/RR_foot" # topic containing the various positions of the rear right foot
+body_state: "body" # topic containing the various positions of the robot body
+FL_foot: "/feet_publisher_FL" # topic containing the various positions of the front left foot
+FR_foot: "/feet_publisher_FR" # topic containing the various positions of the front right foot 
+RL_foot: "/feet_publisher_RL" # topic containing the various positions of the rear left foot
+RR_foot: "/feet_publisher_RR" # topic containing the various positions of the rear right foot
 
 
 # Transformation matrices
 transform_body_lidar: [0.267,0.000,0.000,-0.500,0.500,-0.500,0.500] # transformation terms (translation-xyz[0-2],rotations-xyzw[3-6](in quaternions)) defining camera frame objects in body frame
 transform_camera_lidar: [0.000,0.000,0.000,-0.500,0.500,-0.500,0.500] # transformation terms (translation[0-2],rotations[3-6](in quaternions)) defining lidar frame objects in camera frame
-transform_body_marker: [0.000,0.000,0.000,0.000,0.000,0.000,1] # trasformation terms (translation[0-2],rotations[3-6](in quaternions)) defining markers frame objects in body frame
+transform_body_marker: [-0.017,0.700,0.810,0.000,0.000,0.000,1] # trasformation terms (translation[0-2],rotations[3-6](in quaternions)) defining markers frame objects in body frame
 
 # Robot case
 is_robot: 1
 camera_frame_id: "camera_link"
+pointcloud_frame_id: "camera_depth_frame"
 
 # Points features extractor parameters
 points_n_servers: 3 # number of servers for the point extractor
@@ -31,7 +32,7 @@ geometry_n_servers: 3 # number of servers for the geometry extractor
 # Visual features extractor parameters
 visual_n_servers: 2 # number of servers for the visual extractor
 visual_threshold: 10 # minimum height in pixel to perform the analysis of the material
-camera_parameters: [476.7030836014194, 0.0, 400.5, -0.0, 0.0, 476.7030836014194, 400.5, 0.0, 0.0, 0.0, 1.0, 0.0] # parameters of the camera
+camera_parameters: [462.3869323730469, 0.0, 328.7102966308594, 0.0, 0.0, 462.8241882324219, 166.0992431640625, 0.0, 0.0, 0.0, 1.0, 0.0] # parameters of the camera
 
 # Traversability score
 general_weight: [1,0,0] # weight for the three types of score (geometrical,visual and on the pointcloud)

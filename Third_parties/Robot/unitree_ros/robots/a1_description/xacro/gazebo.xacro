@@ -397,7 +397,7 @@
 		  <bodyName>FL_foot</bodyName>
 		  <topicName>pos/FL_foot</topicName>
 		  <gaussianNoise>0.01</gaussianNoise>
-		  <frameName>world</frameName>
+		  <frameName>trunk</frameName>
 		  <xyzOffsets>0 0 0</xyzOffsets>
 		  <rpyOffsets>0 0 0</rpyOffsets>
                </plugin>
@@ -414,7 +414,7 @@
 		  <bodyName>FR_foot</bodyName>
 		  <topicName>pos/FR_foot</topicName>
 		  <gaussianNoise>0.01</gaussianNoise>
-		  <frameName>world</frameName>
+		  <frameName>trunk</frameName>
 		  <xyzOffsets>0 0 0</xyzOffsets>
 		  <rpyOffsets>0 0 0</rpyOffsets>
                </plugin>
@@ -431,7 +431,7 @@
 		  <bodyName>RL_foot</bodyName>
 		  <topicName>pos/RL_foot</topicName>
 		  <gaussianNoise>0.01</gaussianNoise>
-		  <frameName>world</frameName>
+		  <frameName>trunk</frameName>
 		  <xyzOffsets>0 0 0</xyzOffsets>
 		  <rpyOffsets>0 0 0</rpyOffsets>
                </plugin>
@@ -448,7 +448,7 @@
 		  <bodyName>RR_foot</bodyName>
 		  <topicName>pos/RR_foot</topicName>
 		  <gaussianNoise>0.01</gaussianNoise>
-		  <frameName>world</frameName>
+		  <frameName>trunk</frameName>
 		  <xyzOffsets>0 0 0</xyzOffsets>
 		  <rpyOffsets>0 0 0</rpyOffsets>
                </plugin>

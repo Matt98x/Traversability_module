@@ -211,6 +211,7 @@ void server_thread(int index, int portion, Vertices *vertices, tf::Transform tra
 
 	//Variables declaration
 	tf::Vector3 sum; // Variable to store the sum from which we can obtain the baricenter dividing by 3
+		tf::Vector3 bari_robot; // Variable to store the sum from which we can obtain the baricenter dividing by 3
 	tf::Vector3 temp1; // Temporary location where we can store points and perform calculations
 	tf::Vector3 temp2; // Temporary location where we can store points and perform calculation
   int last=(index+1)*portion; // The last index the server should consider is the one immidiately before the one at which the next server start
@@ -287,6 +288,8 @@ void server_thread(int index, int portion, Vertices *vertices, tf::Transform tra
 		output.baricenters[i].y=sum.getY();
 		output.baricenters[i].z=sum.getZ();
 
+		bari_robot=transform.inverse()*sum;
+
 		//* Compute two vectors to compute all the other features of the face (generating taking the vertices 1 and 2 and subtracting the vertex at index 0)
 		temp1.setX(vertices[cur.vertex_indices[1]].transformed.x-vertices[cur.vertex_indices[0]].transformed.x);
 		temp1.setY(vertices[cur.vertex_indices[1]].transformed.y-vertices[cur.vertex_indices[0]].transformed.y);
@@ -296,10 +299,15 @@ void server_thread(int index, int portion, Vertices *vertices, tf::Transform tra
 		temp2.setZ(vertices[cur.vertex_indices[2]].transformed.z-vertices[cur.vertex_indices[0]].transformed.z);
 
 		//* Compute the orientation vector of the element
+		
+		sum=temp2.cross(temp1); // the orientation vector will be the cross product between the two sides
+		if(bari_robot.getZ()>0){ // we want to correct the orientation since from the mesh reconstruction all mesh elements normals should point to the robot
+			// With this the dot product is always negative, which mean that the normal is pointing in the direction of the robot
+			sum.setX(-sum.getX());
+			sum.setY(-sum.getY());
+			sum.setZ(-sum.getZ());
 
-		sum=temp1.cross(temp2); // the orientation vector will be the cross product between the two sides
-		if(sum.dot(sight_line)>0) // we want to correct the orientation since from the mesh reconstruction all mesh elements normals should point to the robot
-			sum*=-1; // With this the dot product is always negative, which mean that the normal is pointing in the direction of the robot
+		} 
 	  // Of this we compute the length since it gives hints for the computation of the area and to find the versor
 		float L=sum.length(); // Here we find the length of the orientation vector
 		temp1=sum/L; // With this we normalize the vector making temp1 the versor of sum
@@ -313,7 +321,7 @@ void server_thread(int index, int portion, Vertices *vertices, tf::Transform tra
 			float slope = acosine(alength); // compute the slope as the arcosine of the the dot product
 			output.slopes[i]=slope; // fill the slope field
 		}else{
-			output.slopes[i]=M_PI; // we put the maximum possible slope
+			output.slopes[i]=M_PI/2; // we put the maximum possible slope
 		}
     //* Compute the area of the element
 		float area = L/2; // The area of the mesh element is simply the normal divided by 2

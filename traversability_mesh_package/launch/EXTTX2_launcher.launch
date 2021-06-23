@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="node_start_delay" default="30.0" /> 
+  <rosparam command="load" file="$(find traversability_mesh_package)/config/configuration_file _EXTTX2.yaml" />
+  
+  <!-- MEMORY CLEANER -->
+  <node name="cleaner" pkg="traversability_mesh_package" type="cleaner.sh" />
+
+ <!-- LAUNCHING THE FLOW REGULATOR -->
+  <node name="cloud_handler" pkg="traversability_mesh_package" type="cloud_handler" launch-prefix="bash -c 'sleep 5; $0 $@' "/>
+	
+  <!-- LAUNCHING THE MESH RECONSTRUCTION -->
+  <node name="lvr" pkg="lvr_ros" type="lvr_ros_reconstruction" respawn="true" launch-prefix="bash -c 'sleep 5; $0 $@' "/>
+
+  <!-- LAUNCHING THE FLOW REGULATOR -->
+  <node name="flow" pkg="traversability_mesh_package" type="flow_regulator" launch-prefix="bash -c 'sleep 5; $0 $@' "/>
+ 
+ <!-- Timestampers
+
+ <node name="my_node1" pkg="traversability_mesh_package" type="relayer1" args="FL"/>
+ <node name="my_node2" pkg="traversability_mesh_package" type="relayer1" args="FR"/>
+ <node name="my_node3" pkg="traversability_mesh_package" type="relayer1" args="RL"/>
+ <node name="my_node4" pkg="traversability_mesh_package" type="relayer1" args="RR"/>
+ <node name="my_node5" pkg="traversability_mesh_package" type="relayer2"/>
+-->
+	<!-- LAUNCHING THE ROBOT STATE -->
+  <node name="robot_state" pkg="traversability_mesh_package" type="alternative_state" output="screen" respawn="true" launch-prefix="bash -c 'sleep 5; $0 $@' "/> 
+
+  <!-- LAUNCHING THE GEOMETRY FEATURES EXTRACTOR -->
+   <node name="geometry_extractor" pkg="traversability_mesh_package" type="geometry_extractor"  respawn="true" launch-prefix="bash -c 'sleep 5; $0 $@' "/>  
+	
+  <!-- LAUNCHING THE VISUAL FEATURES EXTRACTOR -->
+  <node name="visual_extractor" pkg="traversability_mesh_package" type="visual_extractor" respawn="true"  launch-prefix="bash -c 'sleep 5; $0 $@'" /> 
+
+  <!-- LAUNCHING THE POINT FEATURES EXTRACTOR -->
+  <node name="point_extractor" pkg="traversability_mesh_package" type="point_extractor" respawn="true" launch-prefix="bash -c 'sleep 5; $0 $@'" />
+
+	<!-- LAUNCHING THE TRAVERSABILITY SCORE CALCULATOR -->
+   <node name="t_score" pkg="traversability_mesh_package" type="traversability_score" respawn="true" launch-prefix="bash -c 'sleep 5; $0 $@' "/>  
+
+   <!-- LAUNCHING THE TRAVERSABILITY MESH DISPLAY -->
+   <node name="Traversability_display" pkg="traversability_mesh_package" type="Traversability_display" respawn="true" launch-prefix="bash -c 'sleep 5; $0 $@' "/> 
+
+	<!-- LAUNCHING RVIZ -->
+   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find unitree_gazebo)/rviz/interface.rviz" launch-prefix="bash -c 'sleep 5; $0 $@' "/>
+</launch>

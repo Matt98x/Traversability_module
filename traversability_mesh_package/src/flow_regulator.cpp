@@ -51,7 +51,7 @@ int main (int argc, char **argv)
   std::string robot_state;
   std::string camera_topic;
   std::string pointcloud_topic;
-  n.getParam("/input_state",robot_state); // get the topic for the state(position and orientation of the robot)
+  n.getParam("/robot_state",robot_state); // get the topic for the state(position and orientation of the robot)
   n.getParam("/input_pointcloud",pointcloud_topic); // get the topic for the pointcloud
   n.getParam("/input_image",camera_topic); // get the topic for the image
 

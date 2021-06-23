@@ -6,6 +6,9 @@
   <!--ROBOT LAUNCHER -->
 	<include file="$(find unitree_gazebo)/launch/General.launch"/>
   
+  <!-- MEMORY CLEANER -->
+  <node name="cleaner" pkg="traversability_mesh_package" type="cleaner.sh" />
+
  <!-- LAUNCHING THE FLOW REGULATOR -->
   <node name="cloud_handler" pkg="traversability_mesh_package" type="cloud_handler" launch-prefix="bash -c 'sleep 20; $0 $@' "/>
 	
