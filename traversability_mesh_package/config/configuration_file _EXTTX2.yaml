@@ -5,7 +5,7 @@ robot_state: "/robot_state" # topic containing the various positions of the robo
 
 # In case someone just has the position of the robot in the world reference frame and the feet position in the body reference frame, the following topics
 # can be use with the script "robot_state.cpp"
-body_state: "body" # topic containing the various positions of the robot body
+body_state: "/vrpn_client_node/a1_torso_v1/pose" # topic containing the various positions of the robot body
 FL_foot: "/feet_publisher_FL" # topic containing the various positions of the front left foot
 FR_foot: "/feet_publisher_FR" # topic containing the various positions of the front right foot 
 RL_foot: "/feet_publisher_RL" # topic containing the various positions of the rear left foot
@@ -39,6 +39,7 @@ general_weight: [1,0,0] # weight for the three types of score (geometrical,visua
 
 # Cloud handler precision
 handler_precision: 0.9 # density of the pointcloud to be used in the mesh generation
+clipper: 1 #wheter to clip or not the maximum dinstance
 
 # Geometry specific parameters
 geometric_weight: [0,0,0,0,1] # geometric weights (order= number of neighbors, distance from the foot, step_height, total area, slope cost)

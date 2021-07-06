@@ -216,9 +216,9 @@ void  server_thread(int index, int portion, Vertices *vertices,traversability_me
 		float y_array[3]; // Array to contain the y-image-coordinate for the face
 		int xarray[3]; // Array to contain the x-pixel-coordinate for the face
 		int yarray[3]; // Array to contain the y-pixel-coordinate for the face
-		output.neighbors[i].proximals=vector<unsigned int>(20);
+		output.neighbors.at(i).proximals=vector<unsigned int>(20);
     	//* Compute the real position of the vertices
-		mesh_msgs::TriangleIndices cur = output.mesh.mesh_geometry.faces[i]; // store the current face
+		mesh_msgs::TriangleIndices cur = output.mesh.mesh_geometry.faces.at(i); // store the current face
 		// Vertices transformation
 		for(int j=0;j<3;j++){ // for each vertex
 
@@ -348,11 +348,11 @@ void  server_thread(int index, int portion, Vertices *vertices,traversability_me
 			features_extraction( colors, features); // compute the features
 		}
 		// Initialize the feature portion for the face in the output
-		output.face_features[i]=Features();
+		output.face_features.at(i)=Features();
 		// Input the features in the output
 		for(int l=0;l<9;l++){
 			//ROS_INFO("%f",features[l]);
-			output.face_features[i].features.at(l)=features[l];//features[l];
+			output.face_features.at(i).features.at(l)=features[l];//features[l];
 		}
   	} 
 	  return;

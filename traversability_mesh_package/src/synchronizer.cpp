@@ -1,4 +1,3 @@
-
 //* Necessary libraries
 #include <ros/ros.h> // roslibrary
 // Message types
@@ -63,7 +62,7 @@ void callback(  const geometry_msgs::PoseStamped::ConstPtr& msg)
 int main (int argc, char **argv)
 {
 	//* Node initiation
-  ros::init(argc, argv, "timestamper2");
+  ros::init(argc, argv, "synchronizer");
 
   //* Handle for the node
   ros::NodeHandle n;

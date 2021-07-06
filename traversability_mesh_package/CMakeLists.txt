@@ -128,6 +128,8 @@ include_directories(
 # Declare a C++ library
 add_library(${PROJECT_NAME}
     src/geometry_score.cpp 
+    src/visual_score.cpp
+    src/precision_score.cpp
 )
 
 ## EXECUTABLES
@@ -244,6 +246,15 @@ target_link_libraries(relayer2
   ${MPI_CXX_LIBRARIES}
 )
 add_dependencies(relayer2 ${catkin_EXPORTED_TARGETS})
+
+## Alternative State publisher for robot application
+add_executable(synchronizer src/synchronizer.cpp)
+target_link_libraries(synchronizer
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${MPI_CXX_LIBRARIES}
+)
+add_dependencies(synchronizer ${catkin_EXPORTED_TARGETS})
 
 #############
 ## Install ##

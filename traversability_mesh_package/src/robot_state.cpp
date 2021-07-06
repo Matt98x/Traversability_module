@@ -75,6 +75,7 @@ void callback( const nav_msgs::Odometry::ConstPtr& msg1, const nav_msgs::Odometr
 	RobotState output; // initialize the output message
 	output.header=(*msg1).header;
 	output.header.frame_id="world";
+	output.header.stamp=ros::Time::now();
 	output.state= std::vector<Odometry>(5); // initialize the state with the correct number of feet + 1
 	geometry_msgs::Transform T_wt;
 	T_wt.translation.x=transform_mb[0];

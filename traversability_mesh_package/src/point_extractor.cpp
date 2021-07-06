@@ -44,7 +44,7 @@
 #include <pcl/point_types.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/octree/octree_search.h>
-
+#include <pcl/filters/passthrough.h>
 
 //* Setting namespaces and typedef to symplify the typing
 using namespace sensor_msgs;
@@ -59,7 +59,7 @@ ros::Publisher output_pub;
 //tf2_ros::TransformListener tfListener(tfBuffer);
 int n_server=2; // temporary solution to define the number of servers, later to be made in a parameter of the package
 float k=0.9; //Size of the voxel used to downsample the pointcloud [m] increasing this increases the trasmission rate while reducing the precision of the consequent mesh
-
+int clip;
 boost::mutex mutex1;
 vector<Data> List(10);
 traversability_mesh_package::GeoFeature output; // the output is the mesh plus the geometrical features that will be extracted now
@@ -99,9 +99,9 @@ bool check_point(int index,mesh_msgs::MeshGeometry geometry,pcl::PointXYZ search
 	mainP.setZ(searchPoint.z);
 	for(int i=0;i<3;i++){ // for each vertex
 		// Set the coordinate
-		vertices.at(i).setX(geometry.vertices.at(geometry.faces.at(index).vertex_indices[i]).x);
-		vertices.at(i).setY(geometry.vertices.at(geometry.faces.at(index).vertex_indices[i]).y);
-		vertices.at(i).setZ(geometry.vertices.at(geometry.faces.at(index).vertex_indices[i]).z);
+		vertices.at(i).setX(geometry.vertices.at(geometry.faces.at(index).vertex_indices.at(i)).x);
+		vertices.at(i).setY(geometry.vertices.at(geometry.faces.at(index).vertex_indices.at(i)).y);
+		vertices.at(i).setZ(geometry.vertices.at(geometry.faces.at(index).vertex_indices.at(i)).z);
 	}
 	sideA=vertices.at(1)-vertices.at(0); // first side of the face
 	sideB=vertices.at(2)-vertices.at(0); // second side of the face
@@ -125,9 +125,9 @@ float f_distance(int index,mesh_msgs::MeshGeometry geometry,pcl::PointXYZ search
 	mainP.setZ(searchPoint.z);
 	for(int i=0;i<3;i++){ // for each vertex
 		// Set the coordinate
-		vertices.at(i).setX(geometry.vertices.at(geometry.faces.at(index).vertex_indices[i]).x);
-		vertices.at(i).setY(geometry.vertices.at(geometry.faces.at(index).vertex_indices[i]).y);
-		vertices.at(i).setZ(geometry.vertices.at(geometry.faces.at(index).vertex_indices[i]).z);
+		vertices.at(i).setX(geometry.vertices.at(geometry.faces.at(index).vertex_indices.at(i)).x);
+		vertices.at(i).setY(geometry.vertices.at(geometry.faces.at(index).vertex_indices.at(i)).y);
+		vertices.at(i).setZ(geometry.vertices.at(geometry.faces.at(index).vertex_indices.at(i)).z);
 	}
 	sideA=vertices.at(1)-vertices.at(0); // first side of the face
 	sideB=vertices.at(2)-vertices.at(0); // second side of the face
@@ -152,7 +152,9 @@ void master_thread(traversability_mesh_package::Data param){
 	output.baricenters=vector<geometry_msgs::Point>(n_faces);
 	output.neighbors=vector<traversability_mesh_package::Proximals>(n_faces);
 	output.face_features=vector<traversability_mesh_package::Features>(n_faces);
-	output.metrics=vector<traversability_mesh_package::AccMetrics>(n_faces);
+	traversability_mesh_package::AccMetrics initl;
+	initl.features=vector<double>(3,0.0);
+	output.metrics=vector<traversability_mesh_package::AccMetrics>(n_faces, initl);
 
 	// OCTREE OF FACES BARICENTERS CREATION
 	// Transform the pointcloud from a ros sensor message to a pcl object
@@ -160,26 +162,28 @@ void master_thread(traversability_mesh_package::Data param){
 	cloud->width=n_faces;
 	cloud->height=1;
 	cloud->points.resize(cloud->width*cloud->height);
-	for(std::size_t i=0; i<cloud->size(); i++){
+	//ROS_INFO("%d %d",cloud->size(),n_faces);
+	for(std::size_t i=0; i<n_faces; i++){
 		float baricenter_x=0.0,baricenter_y=0.0,baricenter_z=0.0; // initialization of the baricenter coordinates
 		for(int j=0;j<3;j++){ // Find the baricenter of the face without dividing(sum the respective coordinates of the three vertices)
 			baricenter_x+=param.mesh.mesh_geometry.vertices.at(param.mesh.mesh_geometry.faces.at(i).vertex_indices[j]).x;
 			baricenter_y+=param.mesh.mesh_geometry.vertices.at(param.mesh.mesh_geometry.faces.at(i).vertex_indices[j]).y;
 			baricenter_z+=param.mesh.mesh_geometry.vertices.at(param.mesh.mesh_geometry.faces.at(i).vertex_indices[j]).z;
 		}
-		(*cloud)[i].x = baricenter_x/3.0; // assign the new point x-coordinate while dividing by 3(number of vertices of the face)
-    	(*cloud)[i].y = baricenter_y/3.0; // assign the new point y-coordinate while dividing by 3(number of vertices of the face)
-    	(*cloud)[i].z = baricenter_z/3.0; // assign the new point z-coordinate while dividing by 3(number of vertices of the face)
+		(*cloud).at(i).x = baricenter_x/3.0; // assign the new point x-coordinate while dividing by 3(number of vertices of the face)
+    	(*cloud).at(i).y = baricenter_y/3.0; // assign the new point y-coordinate while dividing by 3(number of vertices of the face)
+    	(*cloud).at(i).z = baricenter_z/3.0; // assign the new point z-coordinate while dividing by 3(number of vertices of the face)
 		/*
 		output.metrics.at(i).features.insert(output.metrics.at(i).features.end(),0.0); // point counter
 		output.metrics.at(i).features.insert(output.metrics.at(i).features.end(),0.0); // mean extractor
 		output.metrics.at(i).features.insert(output.metrics.at(i).features.end(),0.0); // variance extractor
 		output.metrics.at(i).features[2]=0.0; // variance extractor
 		*/
-		output.metrics.at(i).features=vector<_Float64>(3,0.0);
-		for(int k=0;k<3;k++){
-			output.metrics.at(i).features[k]=0.0;
-		}
+		vector<double> var1=vector<double>(3,0.0);
+		output.metrics.at(i).features=var1;
+		output.metrics.at(i).features[0]=0.0;
+		output.metrics.at(i).features[1]=0.0;
+		output.metrics.at(i).features[2]=0.0;
 	}
 
 	// Define the resolution of the octree(the number of elements in the leafs)
@@ -195,7 +199,7 @@ void master_thread(traversability_mesh_package::Data param){
 	// Take a subsample of the points in the pointcloud 
 	pcl::PCLPointCloud2* cloud_in = new pcl::PCLPointCloud2;
 	pcl::PCLPointCloud2ConstPtr cloudPtr(cloud_in);
-	pcl::PCLPointCloud2 cloud_filtered;
+	pcl::PCLPointCloud2::Ptr cloud_filtered (new pcl::PCLPointCloud2 ());
 
 	//* Convert to PCL data type
 	pcl_conversions::toPCL(param.points, *cloud_in);
@@ -204,50 +208,77 @@ void master_thread(traversability_mesh_package::Data param){
 	pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
 	sor.setInputCloud (cloudPtr);
 	sor.setLeafSize (k*0.1, k*0.1, k*0.1);
-	sor.filter (cloud_filtered); 
-	
+	sor.filter (*cloud_filtered); 
+	if(clip){
+		pcl::PassThrough<pcl::PCLPointCloud2> sor1;
+		sor1.setInputCloud (cloudPtr);
+		sor1.setFilterFieldName ("z");
+		sor1.setFilterLimits(0.5,3.0);
+		sor1.filter (*cloud_filtered);
+	}
+	double templ;
 	// POINTS TO FACE MATCHING
 	list<cloudpoint> NList= list<cloudpoint>(n_faces);
 	pcl::PointCloud<pcl::PointXYZ>::Ptr vertices( new pcl::PointCloud<pcl::PointXYZ> );
-	pcl::fromPCLPointCloud2( cloud_filtered, *vertices );
-	vector<traversability_mesh_package::Proximals> face_neighbors=vector<traversability_mesh_package::Proximals>(n_faces);
+	pcl::fromPCLPointCloud2( *cloud_filtered, *vertices );
+	traversability_mesh_package::Proximals initializer=traversability_mesh_package::Proximals();
+	initializer.proximals=std::vector<unsigned int>(1);
+	vector<traversability_mesh_package::Proximals> face_neighbors=vector<traversability_mesh_package::Proximals>(n_faces,initializer);
 	// Loop over all points in the pointcloud
 	for(int i=0;i<vertices->size();i++){
-		 
+		
 		pcl::PointXYZ searchPoint = vertices->points[ i ];
 
 		// Find the index of the closest neighbor
 		int K = 10; // Find the closest 10 points 
 		std::vector<int> pointIdxNKNSearch; // initilize the index
 		std::vector<float> pointNKNSquaredDistance; // initialize the square distance
-		
+		 
 		if (octree.nearestKSearch (searchPoint, K, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
   		{	
 			// Extract the index of the closest face to the query point
-			int index=pointIdxNKNSearch[0];
+			unsigned int index=pointIdxNKNSearch[0];
+			/*for(int q=0;q<pointIdxNKNSearch.size();q++)
+				cout << pointIdxNKNSearch[q] << " ";
+			cout << endl;*/
 			float distance;
+			//ROS_INFO("%d",index);
 			// Verify that the projection along the normal intersect the face
 			if(check_point(index,param.mesh.mesh_geometry,searchPoint)){
 				// Add the index of the point to the list of points of the face
-				
-				face_neighbors.at(index).proximals.insert(face_neighbors.at(index).proximals.end(),i);				
-				// Update the metrics for the face
-				if(output.metrics.at(index).features.size()>0){
-					output.metrics.at(index).features.at(0)++; // update the counter
-					f_distance(index,param.mesh.mesh_geometry,searchPoint);
-					output.metrics.at(index).features[1]+=f_distance(index,param.mesh.mesh_geometry,searchPoint); // add to the counter the distance of the face from the point
+				if(index>=0 && index<output.metrics.size()){
+					
+					//ROS_INFO("%d",index);
+					// Update the metrics for the face
+					if(output.metrics.at(index).features.size()>2){
+						
+						
+						//ROS_INFO("%lf %d %d",output.metrics.at(index).features[0], index,n_faces);
+						templ = output.metrics.at(index).features.at(0)+1.0;
+						output.metrics.at(index).features.at(0)=templ; // update the counter
+							
+						templ=output.metrics.at(index).features.at(1)+f_distance(index,param.mesh.mesh_geometry,searchPoint);
+						//output.metrics.at(index).features.at(1)=templ; // add to the counter the distance of the face from the point
+					}
+					face_neighbors.at(index).proximals.push_back(i);
+					
+					
+
 				}
 				
 			}
+			
   		}
-		  
 		
 	}
+	
 	
 	
 	// METRICS COMPUTATIONS
 	// For all faces computes the metrics
 	for(int i=0;i<n_faces;i++){
+		face_neighbors.at(i).proximals.erase(face_neighbors.at(i).proximals.begin());	
+
 		if(output.metrics.at(i).features.at(0)>0){
 			output.metrics.at(i).features.at(1)/=output.metrics.at(i).features[0]; // compute the mean 
 			for(int j=0;j<face_neighbors.at(i).proximals.size();j++){
@@ -283,10 +314,11 @@ int main (int argc, char **argv)
 {
 	//* Node initiation
   ros::init(argc, argv, "points_extractor");
-
+	
   //* Handle for the node
   ros::NodeHandle n;
-  n.getParam("point_extractor_precision",k);
+  n.getParam("handler_precision",k);
+	n.getParam("clipper",clip);
 	//* Subscribe to the coordinated data topic
   ros::Subscriber input_sub = n.subscribe("base_coord", 10, callback);
 	//* Advertize the coordinated data
