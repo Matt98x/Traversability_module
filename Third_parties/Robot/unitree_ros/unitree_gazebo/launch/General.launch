@@ -9,7 +9,7 @@
   <node pkg="unitree_controller" type="unitree_servo" name="unitree_servo" respawn="true" output="screen" launch-prefix="bash -c 'sleep 10; $0 $@' "/>
   
 
-  <node pkg="unitree_controller" type="unitree_transform" name="unitree_transform" respawn="true" output="screen" launch-prefix="bash -c 'sleep 20; $0 $@' "/> 
+  <node pkg="unitree_controller" type="unitree_transform" name="unitree_transform" respawn="true" output="screen" launch-prefix="bash -c 'sleep 15; $0 $@' "/> 
   
   
 

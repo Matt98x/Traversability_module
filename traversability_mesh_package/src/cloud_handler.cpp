@@ -43,7 +43,7 @@ void callback(const sensor_msgs::PointCloud2::ConstPtr& msg3)
   sor.setLeafSize (k*0.1, k*0.1, k*0.1);
   sor.filter (*cloud_filtered);
   //* Perform clipping
-  if(clip){
+  if(0){
     pcl::PassThrough<pcl::PCLPointCloud2> sor1;
     sor1.setInputCloud (cloudPtr);
     sor1.setFilterFieldName ("z");

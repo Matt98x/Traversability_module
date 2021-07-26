@@ -17,6 +17,9 @@
 // Score calculation library
 #include <score_calculators.h>
 
+#include "myNeuralNetworkFunction.h"
+#include "rt_nonfinite.h"
+
 using namespace std;
 
 
@@ -26,6 +29,10 @@ float vis_calculator(int index, traversability_mesh_package::GeoFeature param){
 	// Face
 	float final_score=0;
 	float denominator=1;
+	double inputs[9]; //*Visual features of the mesh element
+  	double classes[5]; //* Classes binary vector
+	myNeuralNetworkFunction(inputs, classes); //* Classification of the features
+
 	
 	
 	return final_score/denominator;

@@ -60,6 +60,7 @@ add_message_files(
 	Proximals.msg
 	RobotState.msg
   AccMetrics.msg
+  Traversability.msg
 )
 
 generate_messages(
@@ -130,8 +131,14 @@ add_library(${PROJECT_NAME}
     src/geometry_score.cpp 
     src/visual_score.cpp
     src/precision_score.cpp
+    src/myNeuralNetworkFunction.cpp
+    src/myNeuralNetworkFunction_data.cpp
+    src/myNeuralNetworkFunction_initialize.cpp
+    src/rt_nonfinite.cpp
+    include/tmwtypes.h
+    include/rtwtypes.h
+    include/myNeuralNetworkFunction_types.h
 )
-
 ## EXECUTABLES
 
 ## cloud handler executable

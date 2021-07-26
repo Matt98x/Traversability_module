@@ -209,7 +209,7 @@ void master_thread(traversability_mesh_package::Data param){
 	sor.setInputCloud (cloudPtr);
 	sor.setLeafSize (k*0.1, k*0.1, k*0.1);
 	sor.filter (*cloud_filtered); 
-	if(clip){
+	if(0){
 		pcl::PassThrough<pcl::PCLPointCloud2> sor1;
 		sor1.setInputCloud (cloudPtr);
 		sor1.setFilterFieldName ("z");
@@ -257,7 +257,7 @@ void master_thread(traversability_mesh_package::Data param){
 						templ = output.metrics.at(index).features.at(0)+1.0;
 						output.metrics.at(index).features.at(0)=templ; // update the counter
 							
-						templ=output.metrics.at(index).features.at(1)+f_distance(index,param.mesh.mesh_geometry,searchPoint);
+						//templ=output.metrics.at(index).features.at(1)+f_distance(index,param.mesh.mesh_geometry,searchPoint);
 						//output.metrics.at(index).features.at(1)=templ; // add to the counter the distance of the face from the point
 					}
 					face_neighbors.at(index).proximals.push_back(i);
@@ -276,7 +276,7 @@ void master_thread(traversability_mesh_package::Data param){
 	
 	// METRICS COMPUTATIONS
 	// For all faces computes the metrics
-	for(int i=0;i<n_faces;i++){
+	/*for(int i=0;i<n_faces;i++){
 		face_neighbors.at(i).proximals.erase(face_neighbors.at(i).proximals.begin());	
 
 		if(output.metrics.at(i).features.at(0)>0){
@@ -289,7 +289,7 @@ void master_thread(traversability_mesh_package::Data param){
 			output.metrics.at(i).features[2]/=(output.metrics.at(i).features[0]-1); // finalize the computation of the mean
 		}
 	}
-	
+	*/
     //* Send the feature message 
 	output_pub.publish(output);
 	

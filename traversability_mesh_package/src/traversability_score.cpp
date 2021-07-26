@@ -50,6 +50,7 @@ typedef sync_policies::ApproximateTime<GeoFeature,GeoFeature,GeoFeature> MySyncP
 //* Variable declaration
 ros::Publisher point_pub;
 mesh_msgs::TriangleMeshStamped output;
+
 boost::mutex mutex; // mutex to handle the access to the vertex structures array
 RobotState state; // most recent localization  of the robotly the three approaches
 float sum_geom_param; // sum of all the geometrical param to normalize the score from 0 to 1
@@ -59,8 +60,8 @@ float max_ang_diff; // maximum allowed angular difference for similarity
 std::vector<float> gen_param; // score computer parameters to weight different 
 std::vector<float> geo_param; // temporary variable to store the parameters for the geometry score computation (order= number of neighbors, distance from the foot, step_height, total area, slope cost)
 std::vector<float> prec_param; // temporary variable to store the parameters for the precision score computation (order= mean, variance)
-ros::NodeHandle* n_point;
-
+ros::NodeHandle* n_point; // pointer to the nodehandle to update the parameters
+FILE* file; // Pointer to the output file where we store the precision measurements
 
 void update(){
 	
@@ -95,7 +96,7 @@ void callback( const traversability_mesh_package::GeoFeature::ConstPtr& msg1,con
 	const traversability_mesh_package::GeoFeature inputPrec=*msg3;
 
 	update();
-
+	
   	// spawn another thread
   	boost::thread thread_b(master_thread, inputGeo,inputVis,inputPrec,state);
 
@@ -186,7 +187,7 @@ void server_thread(int index, int portion, traversability_mesh_package::GeoFeatu
 			sum_scores[0]=geom_calculator(i,param1,rstate);
 		}
 		//* Compute the visual based score
-		if(gen_param[1]>0){
+		if(gen_param[2]>0){
 			sum_scores[1]=vis_calculator(i,param2);
 		}
 		//* Compute the precision related score
