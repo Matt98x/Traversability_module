@@ -15,7 +15,7 @@ ROS Melodic
 A robot with sensors able to extract a point cloud(PointCloud2) and an image of the environment.  
 Here an example with the A1 by Unitree:  
 
-<img src="Media_folder/PointCloud.JPG" height="400" hspace="5"/> <img src="Media_folder/MeshPrecision.JPG" height="400" hspace="5"/>
+<img src="https://github.com/Matt98x/Traversability_module/blob/main/Media_folder/PointCloud.JPG" height="400" hspace="5"/> <img src="https://github.com/Matt98x/Traversability_module/blob/main/Media_folder/Mesh_precision.JPG" height="400" hspace="5"/>
 
 
 ## Installation and build
